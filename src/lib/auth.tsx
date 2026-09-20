@@ -103,8 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Registro público: se crea la cuenta de Supabase Auth con los datos
   // (nombre y teléfono) como metadatos; el trigger auto_crear_usuario_
   // cliente inserta la fila en `usuarios` con rol 'cliente'.
-  // Devuelve true si ya quedó una sesión iniciada (confirmación de
-  // correo desactivada) o false si falta confirmar el correo.
+  // El trigger trg_auto_confirmar_email (migración 0010) confirma el correo
+  // al instante, así que el signup devuelve sesión y el cliente entra
+  // directo a la tienda (sin "revisa tu correo").
   const registrar = async (
     email: string,
     password: string,

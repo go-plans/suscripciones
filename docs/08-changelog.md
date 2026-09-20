@@ -2,6 +2,14 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-20 — Registro sin verificación de correo
+
+### v0.3.3
+
+- **fix** **Registro sin verificación de correo**: cualquier usuario nuevo queda confirmado al instante (`email_confirmed_at` se fija en el mismo INSERT) y entra **directo a la tienda** nada más crear la cuenta. Ya no aparece "¡Casi listo! revisa tu correo".
+- **feat** Migración `0010_auto_confirmar_email.sql`: trigger `trg_auto_confirmar_email` (BEFORE INSERT en `auth.users`) que rellena `email_confirmed_at`/`confirmed_at = now()` si vienen NULL, más la función `public.auto_confirmar_email()`.
+- **test** Verificado con signup real vía API y E2E en el navegador: el registro retorna sesión (`access_token`) y redirige a `/#/tienda` con el aviso "¡Cuenta creada con éxito!".
+
 ## 2026-09-20 — Tienda tipo catálogo con páginas por plataforma
 
 ### v0.3.2
