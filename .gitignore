@@ -18,6 +18,9 @@ dist-ssr
 !.env.example
 API KEYS.txt
 
+# Logs
+logs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -9,7 +9,7 @@
 -- 1) Estados automáticos: marcar suscripciones vencidas
 --    Corre todos los días a las 00:00
 -- ------------------------------------------------------------
-select extensions.cron.schedule(
+select cron.schedule(
     'vencimientos-diarios',
     '0 0 * * *',
     $$ update public.suscripciones
