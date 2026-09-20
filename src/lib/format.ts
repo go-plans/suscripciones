@@ -29,12 +29,25 @@ export const fmtNum = (n: number | string | null | undefined, decimals = 2): str
     maximumFractionDigits: decimals,
   }).format(Number(n ?? 0))
 
+// Las fechas tipo date ('YYYY-MM-DD') vienen UTC de la BD; en Venezuela (UTC-4)
+// show un día antes si se parsean con new Date(iso). Se construyen en hora local.
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
+
+const dateLocal = (iso: string): Date => {
+  const m = iso.match(DATE_ONLY)
+  if (m) {
+    const [, y, mo, d] = m
+    return new Date(Number(y), Number(mo) - 1, Number(d), 12) // mediodía local
+  }
+  return new Date(iso)
+}
+
 export const fmtDate = (iso: string): string =>
   new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(iso))
+  }).format(dateLocal(iso))
 
 export const fmtDateTime = (iso: string): string =>
   new Intl.DateTimeFormat(locale, {
@@ -43,7 +56,7 @@ export const fmtDateTime = (iso: string): string =>
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(iso))
+  }).format(dateLocal(iso))
 
 // Fecha local (no UTC): en Venezuela (UTC-4) a partir de las 20:00 la
 // fecha UTC es la del día siguiente y habría pagos mal fechados.

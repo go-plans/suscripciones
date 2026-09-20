@@ -2,20 +2,59 @@ import { Link } from 'react-router-dom'
 import type { PlataformaTienda, PlanTienda } from '../../lib/tienda'
 import { precioUsd } from '../../lib/tienda'
 
+// ---------- Colores Google ----------
+const GOOGLE = {
+  blue: '#4285F4',
+  red: '#EA4335',
+  yellow: '#FBBC05',
+  green: '#34A853',
+  dark: '#202124',
+  mid: '#5F6368',
+  light: '#9AA0A6',
+  bg: '#F1F3F4',
+  bgAlt: '#F8F9FA',
+  link: '#1a73e8',
+}
+
+// Texto "1 año" con cada letra en color Google
+function AnoGoogle({ className = '' }: { className?: string }) {
+  const letters = [
+    { char: '1', color: GOOGLE.blue },
+    { char: ' ', color: '' },
+    { char: 'a', color: GOOGLE.red },
+    { char: 'ñ', color: GOOGLE.yellow },
+    { char: 'o', color: GOOGLE.green },
+  ]
+  return (
+    <span className={className}>
+      {letters.map((l, i) =>
+        l.char === ' ' ? (
+          <span key={i}>&nbsp;</span>
+        ) : (
+          <span key={i} style={{ color: l.color }}>
+            {l.char}
+          </span>
+        ),
+      )}
+    </span>
+  )
+}
+
 // ---------- Tarjeta de precio (variante Google: vertical) ----------
 function CartaPrecio({ plan, destacada }: { plan: PlanTienda; destacada?: boolean }) {
   const tachado = plan.precio_referencia_usd
+  const esAno = plan.meses === 12
   return (
     <div
       className="relative rounded-[30px] p-[3px]"
       style={
         destacada
-          ? { backgroundImage: 'linear-gradient(135deg,#4285F4,#EA4335,#FBBC05,#34A853)' }
+          ? { backgroundImage: `linear-gradient(135deg, ${GOOGLE.blue}, ${GOOGLE.red}, ${GOOGLE.yellow}, ${GOOGLE.green})` }
           : undefined
       }
     >
       <div
-        className={`flex h-full flex-col gap-3 rounded-[27px] bg-white p-6 ${
+        className={`flex h-full flex-col items-center gap-2 rounded-[27px] bg-white px-6 py-8 text-center ${
           destacada ? '' : 'border-2 border-[#E0E0E0]'
         }`}
       >
@@ -31,25 +70,30 @@ function CartaPrecio({ plan, destacada }: { plan: PlanTienda; destacada?: boolea
           </span>
         ) : null}
 
-        <p className="text-sm font-semibold text-[#5F6368]">{plan.etiqueta}</p>
-        <div>
+        {/* Etiqueta de duración */}
+        {esAno ? (
+          <AnoGoogle className="text-2xl font-extrabold tracking-tight md:text-3xl" />
+        ) : (
+          <p className="text-2xl font-extrabold tracking-tight text-[#202124] md:text-3xl">
+            {plan.etiquetaCorta}
+          </p>
+        )}
+
+        <div className="mt-2">
           {tachado ? (
             <p className="text-sm text-[#9AA0A6] line-through">{precioUsd(tachado)}</p>
           ) : null}
           <p
-            className={`text-3xl font-extrabold ${
+            className={`text-4xl font-extrabold ${
               destacada ? 'text-[#4285F4]' : 'text-[#202124]'
             }`}
           >
             {precioUsd(plan.precio_venta_usd)}
           </p>
-          <p className="text-xs text-[#5F6368]">
-            {plan.meses === 1 ? 'único pago' : `equivale a ${precioUsd(plan.precioMes)} /mes`}
-          </p>
         </div>
         <Link
           to="/registro"
-          className={`mt-auto rounded-full px-4 py-2.5 text-center text-sm font-semibold transition-colors ${
+          className={`mt-auto rounded-full px-6 py-3 text-sm font-semibold transition-colors ${
             destacada
               ? 'bg-[#4285F4] text-white hover:bg-[#1a73e8]'
               : 'bg-[#F8F9FA] text-[#1a73e8] hover:bg-[#E8F0FE]'
@@ -65,22 +109,27 @@ function CartaPrecio({ plan, destacada }: { plan: PlanTienda; destacada?: boolea
 // ---------- Sección de venta estilo Google (columna vertical) ----------
 export default function TarjetasGoogle({ p }: { p: PlataformaTienda }) {
   return (
-    <section className="bg-[#FFFFFF] py-12">
+    <section className="bg-white py-12">
       <div className="mx-auto max-w-5xl px-4">
         {/* Hero */}
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight text-[#202124] md:text-5xl">
+          <h1
+            className="text-4xl font-extrabold tracking-tight md:text-5xl"
+            style={{ fontFamily: 'var(--font-display), system-ui, sans-serif', color: GOOGLE.dark }}
+          >
             5 TB de almacenamiento
           </h1>
-          <p className="mt-2 text-xl text-[#5F6368] md:text-2xl">en tu cuenta de Google</p>
+          <p className="mt-2 text-xl md:text-2xl" style={{ color: GOOGLE.mid }}>
+            en tu cuenta de Google
+          </p>
           {/* Fila de integraciones */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm font-medium text-[#5F6368]">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm font-medium" style={{ color: GOOGLE.mid }}>
             {['Gmail', 'Google Photos', 'Google Drive', 'Google One', '+'].map((s) => (
-              <span key={s} className="rounded-full bg-[#F1F3F4] px-4 py-1.5">
+              <span key={s} className="rounded-full px-4 py-1.5" style={{ background: GOOGLE.bg }}>
                 {s}
               </span>
             ))}
-            <span className="rounded-full bg-gradient-to-r from-[#1a73e8] to-[#34A853] px-4 py-1.5 text-white">
+            <span className="rounded-full px-4 py-1.5 text-white" style={{ background: `linear-gradient(135deg, ${GOOGLE.link}, ${GOOGLE.green})` }}>
               ✦ Gemini Pro
             </span>
           </div>
@@ -88,57 +137,60 @@ export default function TarjetasGoogle({ p }: { p: PlataformaTienda }) {
 
         {/* Comparativo: Pasa de esto → A esto */}
         <div className="mt-10">
-          <p className="text-center text-sm font-semibold uppercase tracking-widest text-[#5F6368]">
+          <p className="text-center text-sm font-semibold uppercase tracking-widest" style={{ color: GOOGLE.mid }}>
             Pasa de esto → A esto
           </p>
           <div className="mt-4 grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
             {/* Problema */}
-            <div className="rounded-3xl bg-[#4A121A] p-6 text-left text-white">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#F28B82]">
+            <div className="rounded-3xl p-6 text-left text-white" style={{ background: '#4A121A' }}>
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#F28B82' }}>
                 Se agotó el almacenamiento
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-[#FAD2CF]">
-                No pudimos enviar ni recibir correos. Tu cuenta de Gmail está llena.
+              <p className="mt-3 text-sm leading-relaxed" style={{ color: '#FAD2CF' }}>
+                No puedes enviar ni recibir correos electrónicos
               </p>
-              <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-white/20">
-                <div className="h-full w-full rounded-full bg-[#EA4335]" />
+              <div className="mt-4 h-3 w-full overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }}>
+                <div className="h-full w-full rounded-full" style={{ background: GOOGLE.red }} />
               </div>
-              <p className="mt-1 text-right text-xs text-[#F28B82]">100% usado</p>
+              <p className="mt-1 text-right text-xs" style={{ color: '#F28B82' }}>16.44 GB de 15 GB en uso</p>
               <div className="mt-5 flex flex-wrap gap-2">
-                <span className="rounded-full border border-white/70 px-4 py-1.5 text-xs font-semibold">
+                <span className="rounded-full border px-4 py-1.5 text-xs font-semibold" style={{ borderColor: 'rgba(255,255,255,0.7)' }}>
                   Obtener oferta
                 </span>
-                <span className="rounded-full border border-white/70 px-4 py-1.5 text-xs font-semibold">
+                <span className="rounded-full border px-4 py-1.5 text-xs font-semibold" style={{ borderColor: 'rgba(255,255,255,0.7)' }}>
                   Liberar espacio
                 </span>
               </div>
             </div>
 
             {/* Flecha */}
-            <div className="hidden text-4xl font-black text-[#4285F4] md:block">→</div>
-            <div className="block text-center text-4xl font-black text-[#4285F4] md:hidden">↓</div>
+            <div className="hidden text-4xl font-black md:block" style={{ color: GOOGLE.blue }}>→</div>
+            <div className="block text-center text-4xl font-black md:hidden" style={{ color: GOOGLE.blue }}>↓</div>
 
             {/* Solución */}
-            <div className="rounded-3xl bg-[#18191B] p-6 text-white">
-              <div className="flex items-center gap-2 text-xs text-[#9AA0A6]">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#4285F4] text-[10px] font-black text-white">
+            <div className="rounded-3xl p-6 text-white" style={{ background: '#18191B' }}>
+              <div className="flex items-center gap-2 text-xs" style={{ color: GOOGLE.light }}>
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black text-white" style={{ background: GOOGLE.blue }}>
                   G
                 </span>
                 tu cuenta · Google One
               </div>
-              <p className="mt-4 text-sm text-[#BDC1C6]">5 TB de almacenamiento</p>
-              <p className="mt-2 text-2xl font-bold text-[#34A853]">0% de 5 TB en uso</p>
-              <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-white/10">
-                <div className="h-full w-[2%] rounded-full bg-[#34A853]" />
+              <p className="mt-4 text-sm" style={{ color: '#BDC1C6' }}>5 TB de almacenamiento</p>
+              <p className="mt-2 text-2xl font-bold" style={{ color: GOOGLE.green }}>0% de 5 TB en uso</p>
+              <div className="mt-4 h-3 w-full overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                <div className="h-full w-[2%] rounded-full" style={{ background: GOOGLE.green }} />
               </div>
-              <p className="mt-1 text-right text-xs text-[#9AA0A6]">Sobran 5 TB</p>
+              <p className="mt-1 text-right text-xs" style={{ color: GOOGLE.light }}>Sobran 5 TB</p>
             </div>
           </div>
         </div>
 
         {/* Precios */}
         <div className="mt-12">
-          <h2 className="text-center text-xl font-bold text-[#202124] md:text-2xl">
+          <h2
+            className="text-center text-xl font-bold md:text-2xl"
+            style={{ fontFamily: 'var(--font-display), system-ui, sans-serif', color: GOOGLE.dark }}
+          >
             Libera espacio en tu correo por:
           </h2>
           <div className="mt-8 grid gap-8 md:grid-cols-3 md:gap-5">

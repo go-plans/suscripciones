@@ -2,6 +2,7 @@
 
 > Proyecto Supabase: `xbmewcmpfnligeodggop` · Región: `us-west-2`
 > Migraciones fuente: [`supabase/migrations/`](../supabase/migrations/)
+> Pooler: `aws-0-us-west-2.pooler.supabase.com:5432` (usuario `postgres.<ref>`; el host directo `db.<ref>.supabase.co` no resuelve)
 
 ## 1. Modelo de datos (12 tablas + 2 vistas)
 
@@ -29,7 +30,7 @@ Relaciones principales: un **cliente** (`usuarios.rol='cliente'`) puede tener mu
 | Tabla | Descripción | Claves |
 |---|---|---|
 | `tasas_cambio` | Histórico de tasa BCV | `fecha` unique, `tasa_bcv NUMERIC(12,4)` |
-| `pagos_ingresos` | Pagos recibidos de clientes | FK `cliente_id`; `moneda` ('USD'/'BS'/'USDT'), `equivalente_usd`, `tasa_bcv_aplicada`, `metodo_pago`, `fecha_pago` |
+| `pagos_ingresos` | Pagos recibidos de clientes | FK `cliente_id`; `moneda` ('USD'/'BS'/'USDT'), `equivalente_usd`, `tasa_bcv_aplicada`, `metodo_pago` ('Zelle'/'Pago Movil'/'Pago Movil Binance'/'Binance'/'Transferencia'/'Otro'), `fecha_pago` |
 | `pago_suscripciones` | Pivote pago↔suscripción | FKs `pago_ingreso_id`, `suscripcion_id`; unique `(pago_ingreso_id, suscripcion_id)` |
 | `pagos_egresos` | Pagos a proveedores | FKs `proveedor_id`, `cuenta_madre_id`; `monto_pagado_usd` |
 
@@ -51,6 +52,8 @@ date            -- fechas de corte (fecha_inicio, fecha_corte_*)
 | `trg_comision_referido` | `AFTER INSERT` en `pago_suscripciones` | Si el cliente de la suscripción tiene `referido_por`, inserta en `comisiones` el **30%** de `monto_asignado_usd` con estado `pendiente` |
 | `trg_cupos_after_insert` / `_update` / `_delete` | en `suscripciones` | Mantiene `cuentas_madre.cupos_ocupados` y **rechaza** asignaciones que superen `cupos_totales` |
 | `auto_crear_usuario_cliente` | `AFTER INSERT` en `auth.users` | **Registro público**: crea la fila en `usuarios` con `rol='cliente'` tomando nombre/teléfono de `raw_user_meta_data` del usuario recién registrado. Así el cliente nunca puede escribirse a sí mismo (el trigger lo hace la BD). Puede desactivarse en el SQL Editor si se quiere el alta manual |
+| `renovar_suscripcion_por_pago` | `AFTER INSERT` en `pago_suscripciones` | Extiende `fecha_corte_cliente` desde la **fecha del pago** (no `current_date`), sumando `duracion_dias` del plan; marca estado `activa`. Actualizado en v0.3.1 para soportar cobros atrasados |
+| `editar_pago` (RPC) | llamada desde app (solo admin) | Reemplaza pago + distribución y recalcula comisión del agente atómicamente. Valida `es_admin()`. Creada en v0.3.1 |
 
 ## 4. Row Level Security (RLS)
 

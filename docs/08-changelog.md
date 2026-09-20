@@ -2,6 +2,28 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-20 — Pagos avanzados + Rediseño visual de la tienda
+
+### v0.3.1
+
+- **feat** **Fecha del pago editable**: el formulario de Pagos ahora incluye un campo `fecha_pago` (por defecto hoy, máximo hoy, permite fechas pasadas) para registrar cobros hechos antes de la web. La renovación de suscripciones se calcula desde la fecha del pago.
+- **feat** **Moneda automática según método**: al seleccionar método de pago, la moneda se preselecciona sola (Pago Movil→BS, Zelle→USD, Binance/Transferencia→USDT). La moneda sigue siendo editable.
+- **feat** **Método "Binance"** agregado a la lista de métodos de pago (requirió migración CHECK). Método "Efectivo" retirado (el negocio no lo usa).
+- **feat** **Buscador de cliente** en el formulario de Pagos: escribir nombre o correo filtra en vivo, con componente reutilizable `SelectCliente`.
+- **feat** **Filtros en la tabla de pagos**: búsqueda por cliente, filtro por método, por moneda, rango de fechas (desde/hasta), totales filtrados y botón "Limpiar filtros".
+- **feat** **Editar y borrar pagos**: botones de lápiz (editar) y basura (borrar) en cada fila. Editar modifica fecha/monto/moneda/método/distribución y recalcula comisión del agente vía la función RPC `editar_pago`. Borrar elimina el pago, sus asignaciones y comisión asociada en cascada.
+- **feat** **Límite de pagos** subido de 100 a 500 en `fetchPagos`.
+- **fix** **fmtDate corregido**: las fechas tipo date (`YYYY-MM-DD`) ahora se parsean en hora local (mediodía) en lugar de UTC, evitando el desfase de −1 día en Venezuela.
+- **fix** **Formato de precios en la tienda**: `precioUsd` ahora muestra `2.99$` (punto decimal, $ al final) en lugar de `$ 2,99`, coincidiendo con el diseño de referencia.
+- **feat** **Fuentes tipográficas**: Google Sans (400/500/700) y Google Sans Display (400/500/700) descargadas a `/fonts/` y aplicadas al catálogo de Google One. Canva Sans (Regular/Bold) descargada del zip y aplicada a Canva Pro/Spotify.
+- **refactor** **Diseño visual de la tienda** actualizado para coincidir con las imágenes de referencia:
+  - Google One: "1 año" con colores de marca Google (azul/rojo/amarillo/verde), tipografía Google Sans Display, comparativa "Pasa de esto → A esto" refinada.
+  - Canva Pro: logo "Canva" en estilo itálico/script, "PRO" en mayúsculas, tarjetas horizontales con divisor vertical y badges teal.
+  - Spotify Premium: logo "♫ Spotify Premium", tarjetas negras con texto verde, badges blancos, footer con descargo BCV.
+- **feat** Migración `0009_pagos_avanzados.sql`: CHECK de `metodo_pago` actualizado (agrega 'Binance', elimina 'Efectivo'), función `renovar_suscripcion_por_pago` reescrita para usar `fecha_pago` del pago (no `current_date`), función RPC `editar_pago` (edición atómica: pago + distribución + comisión).
+- **security** Función `editar_pago` validada con `es_admin()` (solo admin puede editar pagos).
+- **docs** Pooler de conexión actualizado: `aws-0-us-west-2.pooler.supabase.com:5432` (el host directo `db.<ref>.supabase.co` ya no resuelve).
+
 ## 2026-09-20 — Fase 3 · Tienda pública y registro de clientes
 
 ### v0.3.0

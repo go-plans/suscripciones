@@ -421,6 +421,7 @@ export async function registrarPago(input: {
   tasa_cambio_binance: number | null
   equivalente_usd: number
   metodo_pago: string
+  fecha_pago: string
   asignados: Array<{ suscripcion_id: string; monto_usd: number }>
 }): Promise<void> {
   // 1) Insertar el pago (ingreso)
@@ -434,7 +435,7 @@ export async function registrarPago(input: {
       tasa_cambio_binance: input.tasa_cambio_binance,
       equivalente_usd: input.equivalente_usd,
       metodo_pago: input.metodo_pago || null,
-      fecha_pago: hoy(),
+      fecha_pago: input.fecha_pago,
     })
     .select('id')
     .single()
@@ -455,13 +456,69 @@ export async function registrarPago(input: {
   invalidar('pagos', 'comisiones', 'resumen', 'tasa')
 }
 
+/** Asignación actual de un pago (para prellenar el formulario al editar). */
+export async function fetchAsignacionesDePago(
+  pagoId: string,
+): Promise<Array<{ suscripcion_id: string; monto_usd: number }>> {
+  const { data, error } = await supabase
+    .from('pago_suscripciones')
+    .select('suscripcion_id, monto_asignado_usd')
+    .eq('pago_ingreso_id', pagoId)
+  if (error) throw new Error(errMsg(error))
+  return (data ?? []).map((r) => ({
+    suscripcion_id: r.suscripcion_id,
+    monto_usd: Number(r.monto_asignado_usd),
+  }))
+}
+
+/** Reemplaza un pago y su distribución de forma atómica (RPC editar_pago). */
+export async function actualizarPago(
+  pagoId: string,
+  input: {
+    cliente_id: string
+    monto_pagado: number
+    moneda: Moneda
+    tasa_bcv_aplicada: number | null
+    tasa_cambio_binance: number | null
+    equivalente_usd: number
+    metodo_pago: string
+    fecha_pago: string
+    asignados: Array<{ suscripcion_id: string; monto_usd: number }>
+  },
+): Promise<void> {
+  const { error } = await supabase.rpc('editar_pago', {
+    p_pago_id: pagoId,
+    p_cliente_id: input.cliente_id,
+    p_monto_pagado: input.monto_pagado,
+    p_moneda: input.moneda,
+    p_tasa_bcv_aplicada: input.tasa_bcv_aplicada,
+    p_tasa_cambio_binance: input.tasa_cambio_binance,
+    p_equivalente_usd: input.equivalente_usd,
+    p_metodo_pago: input.metodo_pago,
+    p_fecha_pago: input.fecha_pago,
+    p_asignados: input.asignados.map((a) => ({
+      suscripcion_id: a.suscripcion_id,
+      monto_usd: a.monto_usd,
+    })),
+  })
+  if (error) throw new Error(errMsg(error))
+  invalidar('pagos', 'comisiones', 'resumen')
+}
+
+/** Borra un pago (cascada: asignaciones y comisión asociada). */
+export async function eliminarPago(pagoId: string): Promise<void> {
+  const { error } = await supabase.from('pagos_ingresos').delete().eq('id', pagoId)
+  if (error) throw new Error(errMsg(error))
+  invalidar('pagos', 'comisiones', 'resumen')
+}
+
 export async function fetchPagos(): Promise<PagoRow[]> {
   return cached('pagos', async () => {
     const { data, error } = await supabase
       .from('pagos_ingresos')
       .select('*, usuarios(nombre)')
       .order('fecha_pago', { ascending: false })
-      .limit(100)
+      .limit(500)
     if (error) throw new Error(errMsg(error))
     return (data ?? []) as PagoRow[]
   })

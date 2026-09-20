@@ -1,6 +1,6 @@
 // Helpers del catálogo público de venta (#/tienda)
 import type { CatalogoItem } from './types'
-import { fmtNum, round2 } from './format'
+import { round2 } from './format'
 
 export const MES = 30
 
@@ -105,5 +105,11 @@ export function varianteHorizontal(nombre: string): VarianteHorizontal {
   return 'generica'
 }
 
-// Precio compacto para la tienda: "$ 2,99" (no "USD 2,99")
-export const precioUsd = (n: number): string => `$ ${fmtNum(n)}`
+// Precio compacto para la tienda: "2.99$" (sin espacio, $ al final, punto decimal)
+export const precioUsd = (n: number): string => {
+  const s = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n)
+  return `${s}$`
+}

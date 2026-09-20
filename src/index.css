@@ -1,11 +1,76 @@
 @import "tailwindcss";
 
+/* ─── Google Sans (Google One) ─── */
+@font-face {
+  font-family: 'Google Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/GoogleSans-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Google Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/GoogleSans-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Google Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/GoogleSans-Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Google Sans Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/GoogleSansDisplay-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Google Sans Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/GoogleSansDisplay-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Google Sans Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/GoogleSansDisplay-Bold.ttf') format('truetype');
+}
+
+/* ─── Canva Sans (tienda Canva / Spotify) ─── */
+@font-face {
+  font-family: 'Canva Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/CanvaSans-Regular.otf') format('opentype');
+}
+@font-face {
+  font-family: 'Canva Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/CanvaSans-Bold.otf') format('opentype');
+}
+
+/* ─── Variables globales de tipografía ─── */
 :root {
+  --font-store: 'Google Sans', 'Canva Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Google Sans Display', 'Google Sans', 'Canva Sans', system-ui, sans-serif;
   color-scheme: light;
 }
 
 body {
   @apply bg-slate-100 text-slate-800 antialiased;
+  font-family: var(--font-store);
 }
 
 * {

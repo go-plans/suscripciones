@@ -46,6 +46,15 @@ Ganancia =
 3. El admin liquida la comisión cambiando `estado` a `'liquidada'`.
 4. Los agentes solo ven **sus** comisiones (RLS).
 
+## 6.1 Flujo de pagos (mejorado en v0.3.1)
+
+1. **Registro**: el admin selecciona cliente (buscador), fecha (por defecto hoy, permite pasadas), monto, moneda (se preselecciona según método), tasa BCV/Binance si aplica, método de pago y distribuye entre suscripciones activas.
+2. **Renovación**: al registrar un pago, `trg_renovar_susc_por_pago` extiende `fecha_corte_cliente` de cada suscripción asignada **desde la fecha del pago** (no desde hoy), sumando la duración del plan.
+3. **Comisión**: si la plataforma tiene `aplica_comision=true` y el cliente tiene `referido_por`, el trigger crea una comisión del 30% del monto asignado.
+4. **Edición**: la función RPC `editar_pago` reemplaza el pago + distribución y recalcula la comisión (borra la anterior y reinserta via trigger).
+5. **Borrado**: eliminar un pago cascada `pago_suscripciones` y `comisiones` (ON DELETE CASCADE).
+6. **Moneda por método**: Pago Movil→BS, Zelle→USD, Binance/Transferencia→USDT, Otro→manual.
+
 ## 7. Ciclo de vida de una suscripción
 
 ```

@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  actualizarPago,
+  eliminarPago,
+  fetchAsignacionesDePago,
   fetchClientes,
   fetchPagos,
   fetchSuscripciones,
@@ -8,7 +11,7 @@ import {
   registrarPago,
 } from '../lib/api'
 import type { Moneda, PagoRow, SuscripcionRow, Usuario } from '../lib/types'
-import { fmtDate, fmtNum, fmtUSDT, fmtUSD, fmtVES, round2 } from '../lib/format'
+import { fmtDate, fmtNum, fmtUSDT, fmtUSD, fmtVES, hoy, round2 } from '../lib/format'
 import { errMsg } from '../lib/err'
 import {
   Button,
@@ -23,17 +26,27 @@ import {
   Table,
   Td,
 } from '../components/ui'
+import { SelectCliente } from '../components/SelectCliente'
 import { NuevoCliente } from '../components/inline'
-import { IconRefresh } from '../components/icons'
+import { IconPencil, IconRefresh, IconTrash } from '../components/icons'
 
 const METODOS_PAGO = [
   'Zelle',
   'Pago Movil',
   'Pago Movil Binance',
-  'Efectivo',
+  'Binance',
   'Transferencia',
   'Otro',
 ]
+
+// Moneda que se preselecciona según el método de pago (editable después)
+const MONEDA_POR_METODO: Record<string, Moneda> = {
+  'Zelle': 'USD',
+  'Pago Movil': 'BS',
+  'Pago Movil Binance': 'USDT',
+  'Binance': 'USDT',
+  'Transferencia': 'USDT',
+}
 
 interface Asignacion {
   checked: boolean
@@ -47,6 +60,7 @@ const estadoInicial = {
   tasa: '',
   tasa_binance: '',
   metodo_pago: '',
+  fecha_pago: hoy(),
 }
 
 type FormState = typeof estadoInicial
@@ -62,6 +76,18 @@ export default function Pagos() {
   const [asign, setAsign] = useState<Record<string, Asignacion>>({})
   const [guardando, setGuardando] = useState(false)
   const [reflejando, setReflejando] = useState(false)
+  const [editandoId, setEditandoId] = useState<string | null>(null)
+
+  // Filtros de la tabla
+  const [fQ, setFQ] = useState('')
+  const [fMetodo, setFMetodo] = useState('')
+  const [fMoneda, setFMoneda] = useState('')
+  const [fDesde, setFDesde] = useState('')
+  const [fHasta, setFHasta] = useState('')
+
+  // Guarda el cliente del que ya está cargada la asignación (evita que el
+  // efecto de prellenado borre la asignación real al abrir la edición)
+  const ultimoCliente = useRef('')
 
   const cargar = useCallback(async () => {
     try {
@@ -90,6 +116,7 @@ export default function Pagos() {
   const cargarY = async (actualizar: (f: FormState) => FormState) => {
     await cargar()
     setForm((f) => actualizar(f))
+    ultimoCliente.current = ''
   }
 
   const activasDelCliente = useMemo(
@@ -97,10 +124,12 @@ export default function Pagos() {
     [susc, form.cliente_id],
   )
 
-  // Prellenar asignación cuando cambia el cliente
+  // Prellenar asignación con los precios del plan cuando se elige un cliente
   useEffect(() => {
+    if (!form.cliente_id || form.cliente_id === ultimoCliente.current) return
+    ultimoCliente.current = form.cliente_id
     const next: Record<string, Asignacion> = {}
-    for (const s of activasDelCliente) {
+    for (const s of susc.filter((x) => x.cliente_id === form.cliente_id && x.estado === 'activa')) {
       next[s.id] = {
         checked: true,
         monto: String(s.planes?.precio_venta_usd ?? 0),
@@ -109,6 +138,17 @@ export default function Pagos() {
     setAsign(next)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.cliente_id, susc])
+
+  const elegirCliente = (id: string) => {
+    setForm((f) => ({ ...f, cliente_id: id }))
+  }
+
+  const cambiarMetodo = (m: string) => {
+    setForm((f) => {
+      const moneda = MONEDA_POR_METODO[m]
+      return moneda ? { ...f, metodo_pago: m, moneda } : { ...f, metodo_pago: m }
+    })
+  }
 
   const montoNum = useMemo(() => Number(form.monto) || 0, [form.monto])
   const tasaNum = useMemo(() => Number(form.tasa) || 0, [form.tasa])
@@ -171,6 +211,43 @@ export default function Pagos() {
     }
   }
 
+  const abrirEditar = async (p: PagoRow) => {
+    try {
+      const asignaciones = await fetchAsignacionesDePago(p.id)
+      // Evita que el efecto de prellenado pise la asignación real guardada
+      ultimoCliente.current = p.cliente_id
+      setForm({
+        cliente_id: p.cliente_id,
+        monto: String(p.monto_pagado),
+        moneda: p.moneda,
+        tasa: p.tasa_bcv_aplicada != null ? String(p.tasa_bcv_aplicada) : '',
+        tasa_binance: p.tasa_cambio_binance != null ? String(p.tasa_cambio_binance) : '',
+        metodo_pago: p.metodo_pago ?? '',
+        fecha_pago: p.fecha_pago ? p.fecha_pago.slice(0, 10) : hoy(),
+      })
+      const next: Record<string, Asignacion> = {}
+      for (const a of asignaciones) {
+        next[a.suscripcion_id] = { checked: true, monto: String(a.monto_usd) }
+      }
+      setAsign(next)
+      setEditandoId(p.id)
+      setError('')
+      setExito('')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (e) {
+      setError(errMsg(e))
+    }
+  }
+
+  const cancelarEdicion = async () => {
+    setEditandoId(null)
+    setForm(estadoInicial)
+    setAsign({})
+    ultimoCliente.current = ''
+    const t = await fetchTasaDelDia()
+    if (t != null) setForm((f) => ({ ...f, tasa: String(t) }))
+  }
+
   const guardar = async () => {
     if (guardando) return
     setGuardando(true)
@@ -183,7 +260,7 @@ export default function Pagos() {
           suscripcion_id,
           monto_usd: Number(a.monto),
         }))
-      await registrarPago({
+      const datos = {
         cliente_id: form.cliente_id,
         monto_pagado: montoNum,
         moneda: form.moneda,
@@ -191,12 +268,24 @@ export default function Pagos() {
         tasa_cambio_binance: form.moneda === 'USDT' ? tasaBinanceNum || null : null,
         equivalente_usd: equivalente,
         metodo_pago: form.metodo_pago,
+        fecha_pago: form.fecha_pago,
         asignados,
-      })
-      setExito(
-        'Pago registrado correctamente. Si la plataforma genera comisión (30%), ya quedó pendiente para el agente referido.',
-      )
+      }
+      if (editandoId) {
+        await actualizarPago(editandoId, datos)
+        setExito(
+          'Pago actualizado correctamente. La comisión del agente (si aplica) se recalculó.',
+        )
+      } else {
+        await registrarPago(datos)
+        setExito(
+          'Pago registrado correctamente. Si la plataforma genera comisión (30%), ya quedó pendiente para el agente referido.',
+        )
+      }
+      setEditandoId(null)
       setForm(estadoInicial)
+      setAsign({})
+      ultimoCliente.current = ''
       const t = await fetchTasaDelDia()
       if (t != null) setForm((f) => ({ ...f, tasa: String(t) }))
       setPagos(await fetchPagos())
@@ -207,8 +296,33 @@ export default function Pagos() {
     }
   }
 
+  const borrar = async (p: PagoRow) => {
+    const quien = p.usuarios?.nombre ?? 'este cliente'
+    if (
+      !window.confirm(
+        `¿Borrar el pago de ${quien} (${fmtMontopago(p)}) del ${fmtDate(p.fecha_pago)}?\n` +
+          'También se quitarán su distribución y la comisión asociada.',
+      )
+    )
+      return
+    try {
+      await eliminarPago(p.id)
+      if (editandoId === p.id) {
+        setEditandoId(null)
+        setForm(estadoInicial)
+        setAsign({})
+        ultimoCliente.current = ''
+      }
+      setExito('Pago eliminado correctamente.')
+      setPagos(await fetchPagos())
+    } catch (e) {
+      setError(errMsg(e))
+    }
+  }
+
   const puedeGuardar =
     !!form.cliente_id &&
+    !!form.fecha_pago &&
     montoNum > 0 &&
     equivalente > 0 &&
     totalAsignado > 0 &&
@@ -220,6 +334,32 @@ export default function Pagos() {
       : p.moneda === 'USDT'
         ? fmtUSDT(p.monto_pagado)
         : fmtUSD(p.monto_pagado)
+
+  // Tabla filtrable
+  const filtrados = useMemo(() => {
+    const q = fQ.trim().toLowerCase()
+    return pagos.filter((p) => {
+      if (q && !(p.usuarios?.nombre ?? '').toLowerCase().includes(q)) return false
+      if (fMetodo && p.metodo_pago !== fMetodo) return false
+      if (fMoneda && p.moneda !== fMoneda) return false
+      if (fDesde && p.fecha_pago < fDesde) return false
+      if (fHasta && p.fecha_pago > fHasta) return false
+      return true
+    })
+  }, [pagos, fQ, fMetodo, fMoneda, fDesde, fHasta])
+
+  const totalFiltrado = useMemo(
+    () => round2(filtrados.reduce((acc, p) => acc + Number(p.equivalente_usd ?? 0), 0)),
+    [filtrados],
+  )
+
+  const limpiarFiltros = () => {
+    setFQ('')
+    setFMetodo('')
+    setFMoneda('')
+    setFDesde('')
+    setFHasta('')
+  }
 
   if (cargando) return <Loading />
 
@@ -235,24 +375,38 @@ export default function Pagos() {
       ) : null}
       {error ? <ErrorMsg message={error} /> : null}
 
+      {editandoId ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <span>
+            ✏️ Editando un pago existente. Cambia lo que necesites y pulsa{' '}
+            <strong>Guardar cambios</strong>.
+          </span>
+          <Button variant="secondary" onClick={() => void cancelarEdicion()}>
+            Cancelar edición
+          </Button>
+        </div>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="1 · Datos del pago">
           <div className="space-y-3">
             <Field label="Cliente *">
-              <Select
-                value={form.cliente_id}
-                onChange={(e) => setForm({ ...form, cliente_id: e.target.value })}
-              >
-                <option value="">Selecciona…</option>
-                {clientes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre}
-                  </option>
-                ))}
-              </Select>
+              <SelectCliente clientes={clientes} value={form.cliente_id} onChange={elegirCliente} />
               <NuevoCliente
                 onCreated={(id) => void cargarY((f) => ({ ...f, cliente_id: id }))}
               />
+            </Field>
+            <Field label="Fecha del pago *">
+              <Input
+                type="date"
+                max={hoy()}
+                value={form.fecha_pago}
+                onChange={(e) => setForm({ ...form, fecha_pago: e.target.value })}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Por defecto hoy. Elige una fecha pasada para registrar cobros hechos antes de la
+                web (la renovación se calcula desde esa fecha).
+              </p>
             </Field>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <Field label="Monto *">
@@ -314,16 +468,13 @@ export default function Pagos() {
               </div>
             ) : form.moneda === 'USDT' ? (
               <p className="text-xs text-slate-400">
-                La tasa de Binance se guarda como referencia con el cobro en USDT (el equival
-                en USD es 1:1).
+                La tasa de Binance se guarda como referencia con el cobro en USDT (el
+                equivalente en USD es 1:1).
               </p>
             ) : null}
 
             <Field label="Método de pago">
-              <Select
-                value={form.metodo_pago}
-                onChange={(e) => setForm({ ...form, metodo_pago: e.target.value })}
-              >
+              <Select value={form.metodo_pago} onChange={(e) => cambiarMetodo(e.target.value)}>
                 <option value="">Selecciona…</option>
                 {METODOS_PAGO.map((m) => (
                   <option key={m} value={m}>
@@ -331,6 +482,10 @@ export default function Pagos() {
                   </option>
                 ))}
               </Select>
+              <p className="mt-1 text-xs text-slate-400">
+                La moneda se ajusta sola según el método (Pago Movil → BS, Zelle → USD,
+                Binance/Transferencia → USDT). Siempre puedes cambiarla.
+              </p>
             </Field>
           </div>
         </Card>
@@ -424,7 +579,13 @@ export default function Pagos() {
 
           <div className="mt-4 flex justify-end">
             <Button onClick={() => void guardar()} disabled={!puedeGuardar || guardando}>
-              {guardando ? 'Registrando…' : 'Registrar pago'}
+              {guardando
+                ? editandoId
+                  ? 'Guardando…'
+                  : 'Registrando…'
+                : editandoId
+                  ? 'Guardar cambios'
+                  : 'Registrar pago'}
             </Button>
           </div>
           {!puedeGuardar && form.cliente_id ? (
@@ -436,12 +597,56 @@ export default function Pagos() {
         </Card>
       </div>
 
-      <Card title="Últimos pagos registrados">
-        {pagos.length === 0 ? (
-          <EmptyState message="Todavía no hay pagos registrados." />
+      <Card title="Historial de pagos">
+        <div className="mb-3 grid gap-2 md:grid-cols-2 lg:grid-cols-6">
+          <Input
+            placeholder="Buscar cliente…"
+            value={fQ}
+            onChange={(e) => setFQ(e.target.value)}
+            className="lg:col-span-2"
+          />
+          <Select value={fMetodo} onChange={(e) => setFMetodo(e.target.value)}>
+            <option value="">Método: todos</option>
+            {METODOS_PAGO.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </Select>
+          <Select value={fMoneda} onChange={(e) => setFMoneda(e.target.value)}>
+            <option value="">Moneda: todas</option>
+            <option value="USD">USD</option>
+            <option value="BS">BS</option>
+            <option value="USDT">USDT</option>
+          </Select>
+          <Input type="date" value={fDesde} onChange={(e) => setFDesde(e.target.value)} />
+          <Input type="date" value={fHasta} onChange={(e) => setFHasta(e.target.value)} />
+        </div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-slate-600">
+            {filtrados.length} pago{filtrados.length === 1 ? '' : 's'} · Total filtrado:{' '}
+            <strong>{fmtUSD(totalFiltrado)}</strong>
+          </p>
+          <Button variant="secondary" onClick={limpiarFiltros}>
+            Limpiar filtros
+          </Button>
+        </div>
+        {filtrados.length === 0 ? (
+          <EmptyState message="No hay pagos que coincidan con los filtros." />
         ) : (
-          <Table headers={['Cliente', 'Fecha', 'Monto', 'Moneda', 'Tasa', 'Equivalent USD', 'Método']}>
-            {pagos.map((p) => (
+          <Table
+            headers={[
+              'Cliente',
+              'Fecha',
+              'Monto',
+              'Moneda',
+              'Tasa',
+              'Equivalent USD',
+              'Método',
+              '',
+            ]}
+          >
+            {filtrados.map((p) => (
               <tr key={p.id}>
                 <Td className="font-medium">{p.usuarios?.nombre ?? '—'}</Td>
                 <Td>{fmtDate(p.fecha_pago)}</Td>
@@ -470,6 +675,16 @@ export default function Pagos() {
                 </Td>
                 <Td className="font-semibold">{fmtUSD(p.equivalente_usd)}</Td>
                 <Td>{p.metodo_pago ?? '—'}</Td>
+                <Td>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="secondary" onClick={() => void abrirEditar(p)} title="Editar">
+                      <IconPencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="danger" onClick={() => void borrar(p)} title="Borrar">
+                      <IconTrash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </Td>
               </tr>
             ))}
           </Table>
