@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   cambiarEstadoSuscripcion,
   crearSuscripcion,
   fetchClientes,
   fetchCuentasMadre,
   fetchPlanes,
-  fetchPlataformas,
   fetchSuscripciones,
 } from '../lib/api'
-import type { CuentaMadreRow, Plan, Plataforma, SuscripcionRow, Usuario } from '../lib/types'
+import type { CuentaMadreRow, PlanRow, SuscripcionRow, Usuario } from '../lib/types'
 import { fmtDate, fmtUSD, hoy } from '../lib/format'
 import {
   Badge,
@@ -22,38 +21,42 @@ import {
   Table,
   Td,
 } from '../components/ui'
+import { NuevoCliente, NuevaCuenta, NuevoPlan } from '../components/inline'
+import { IconSearch } from '../components/icons'
 
 const vacio = {
   cliente_id: '',
   plan_id: '',
   cuenta_madre_id: '',
-  fecha_corte_cliente: '',
+  fecha_inicio: hoy(),
+  fecha_corte_cliente: hoy(),
+  estado: 'activa' as 'activa' | 'vencida' | 'cancelada',
 }
+
+type FormState = typeof vacio
 
 export default function Suscripciones() {
   const [susc, setSusc] = useState<SuscripcionRow[]>([])
   const [clientes, setClientes] = useState<Usuario[]>([])
-  const [planes, setPlanes] = useState<Plan[]>([])
-  const [plataformas, setPlataformas] = useState<Plataforma[]>([])
+  const [planes, setPlanes] = useState<PlanRow[]>([])
   const [cuentas, setCuentas] = useState<CuentaMadreRow[]>([])
+  const [busqueda, setBusqueda] = useState('')
   const [error, setError] = useState('')
   const [modal, setModal] = useState(false)
-  const [form, setForm] = useState(vacio)
+  const [form, setForm] = useState<FormState>(vacio)
 
   const cargar = useCallback(async () => {
     try {
-      const [s, c, p, cm, pf] = await Promise.all([
+      const [s, c, p, cm] = await Promise.all([
         fetchSuscripciones(),
         fetchClientes(),
         fetchPlanes(),
         fetchCuentasMadre(),
-        fetchPlataformas(),
       ])
       setSusc(s)
       setClientes(c)
       setPlanes(p)
       setCuentas(cm)
-      setPlataformas(pf)
       setError('')
     } catch (e) {
       setError((e as Error).message)
@@ -64,9 +67,29 @@ export default function Suscripciones() {
     void cargar()
   }, [cargar])
 
+  // Tras crear una entidad inline: recargar listas y seleccionarla en el formulario
+  const cargarY = async (actualizar: (f: FormState) => FormState) => {
+    await cargar()
+    setForm((f) => actualizar(f))
+  }
+
   const cuentasDisponibles = cuentas.filter(
     (cm) => cm.estado === 'activa' && cm.cupos_ocupados < cm.cupos_totales,
   )
+
+  const filtradas = useMemo(() => {
+    const q = busqueda.trim().toLowerCase()
+    if (!q) return susc
+    return susc.filter((s) =>
+      [
+        s.usuarios?.nombre,
+        s.planes?.plataformas?.nombre,
+        s.cuentas_madre?.correo_cuenta,
+      ]
+        .filter(Boolean)
+        .some((v) => v!.toLowerCase().includes(q)),
+    )
+  }, [susc, busqueda])
 
   const guardar = async () => {
     try {
@@ -74,10 +97,12 @@ export default function Suscripciones() {
         cliente_id: form.cliente_id,
         plan_id: form.plan_id,
         cuenta_madre_id: form.cuenta_madre_id,
+        fecha_inicio: form.fecha_inicio,
         fecha_corte_cliente: form.fecha_corte_cliente,
+        estado: form.estado,
       })
       setModal(false)
-      setForm({ ...vacio, fecha_corte_cliente: hoy() })
+      setForm({ ...vacio })
       await cargar()
     } catch (e) {
       setError((e as Error).message)
@@ -93,24 +118,36 @@ export default function Suscripciones() {
     }
   }
 
-  const planLabel = (p: Plan) => {
-    const pf = plataformas.find((x) => x.id === p.plataforma_id)
-    return `${pf?.nombre ?? ''} — ${p.duracion_dias}d — ${fmtUSD(p.precio_venta_usd)}`
-  }
-
   if (error) return <ErrorMsg message={error} />
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Suscripciones</h1>
-          <p className="text-sm text-slate-500">Contratos individuales por cliente</p>
+          <p className="text-sm text-slate-500">
+            Contratos por cliente · también sirve para registrar suscripciones vendidas antes
+            del sistema
+          </p>
         </div>
-        <Button onClick={() => { setForm({ ...vacio, fecha_corte_cliente: hoy() }); setModal(true) }}>
+        <Button onClick={() => { setForm({ ...vacio }); setModal(true) }}>
           + Nueva suscripción
         </Button>
       </header>
+
+      <div className="relative max-w-sm">
+        <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input
+          className="pl-9"
+          placeholder="Buscar por cliente, plataforma o cuenta…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </div>
+
+      <p className="text-xs text-slate-400">
+        Mostrando {filtradas.length} de {susc.length} suscripciones.
+      </p>
 
       {susc.length === 0 ? (
         <Loading />
@@ -118,7 +155,7 @@ export default function Suscripciones() {
         <Table
           headers={['Cliente', 'Plan', 'Cuenta madre', 'Inicio', 'Corte', 'Estado', 'Acciones']}
         >
-          {susc.map((s) => (
+          {filtradas.map((s) => (
             <tr key={s.id}>
               <Td className="font-medium">{s.usuarios?.nombre ?? '—'}</Td>
               <Td>
@@ -132,7 +169,7 @@ export default function Suscripciones() {
                 <Badge value={s.estado} />
               </Td>
               <Td>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {s.estado === 'activa' ? (
                     <Button variant="secondary" onClick={() => void cambiarEstado(s, 'cancelada')}>
                       Cancelar
@@ -164,6 +201,7 @@ export default function Suscripciones() {
                 </option>
               ))}
             </Select>
+            <NuevoCliente onCreated={(id) => void cargarY((f) => ({ ...f, cliente_id: id }))} />
           </Field>
           <Field label="Plan *">
             <Select
@@ -173,10 +211,11 @@ export default function Suscripciones() {
               <option value="">Selecciona…</option>
               {planes.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {planLabel(p)}
+                  {p.plataformas?.nombre ?? '?'} — {p.duracion_dias}d — {fmtUSD(p.precio_venta_usd)}
                 </option>
               ))}
             </Select>
+            <NuevoPlan onCreated={(id) => void cargarY((f) => ({ ...f, plan_id: id }))} />
           </Field>
           <Field label="Cuenta madre *">
             <Select
@@ -191,14 +230,40 @@ export default function Suscripciones() {
                 </option>
               ))}
             </Select>
+            <NuevaCuenta onCreated={(id) => void cargarY((f) => ({ ...f, cuenta_madre_id: id }))} />
           </Field>
-          <Field label="Fecha de corte (cliente) *">
-            <Input
-              type="date"
-              value={form.fecha_corte_cliente}
-              onChange={(e) => setForm({ ...form, fecha_corte_cliente: e.target.value })}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Fecha de inicio *">
+              <Input
+                type="date"
+                value={form.fecha_inicio}
+                onChange={(e) => setForm({ ...form, fecha_inicio: e.target.value })}
+              />
+            </Field>
+            <Field label="Fecha de corte (cliente) *">
+              <Input
+                type="date"
+                value={form.fecha_corte_cliente}
+                onChange={(e) => setForm({ ...form, fecha_corte_cliente: e.target.value })}
+              />
+            </Field>
+          </div>
+          <Field label="Estado *">
+            <Select
+              value={form.estado}
+              onChange={(e) =>
+                setForm({ ...form, estado: e.target.value as FormState['estado'] })
+              }
+            >
+              <option value="activa">Activa</option>
+              <option value="vencida">Vencida</option>
+              <option value="cancelada">Cancelada</option>
+            </Select>
           </Field>
+          <p className="text-xs text-slate-400">
+            Para suscripciones vendidas antes del sistema: escribe la fecha real de inicio y el
+            estado actual.
+          </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setModal(false)}>
               Cancelar
@@ -206,7 +271,11 @@ export default function Suscripciones() {
             <Button
               onClick={() => void guardar()}
               disabled={
-                !form.cliente_id || !form.plan_id || !form.cuenta_madre_id || !form.fecha_corte_cliente
+                !form.cliente_id ||
+                !form.plan_id ||
+                !form.cuenta_madre_id ||
+                !form.fecha_inicio ||
+                !form.fecha_corte_cliente
               }
             >
               Guardar

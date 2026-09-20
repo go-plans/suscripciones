@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   actualizarCliente,
   crearCliente,
@@ -19,12 +19,14 @@ import {
   Table,
   Td,
 } from '../components/ui'
+import { IconSearch } from '../components/icons'
 
 const vacio = { nombre: '', email: '', telefono: '', referido_por: '' }
 
 export default function Clientes() {
   const [clientes, setClientes] = useState<Usuario[]>([])
   const [agentes, setAgentes] = useState<Usuario[]>([])
+  const [busqueda, setBusqueda] = useState('')
   const [error, setError] = useState('')
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState<Usuario | null>(null)
@@ -44,6 +46,14 @@ export default function Clientes() {
   useEffect(() => {
     void cargar()
   }, [cargar])
+
+  const filtrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase()
+    if (!q) return clientes
+    return clientes.filter((c) =>
+      [c.nombre, c.email, c.telefono].filter(Boolean).some((v) => v!.toLowerCase().includes(q)),
+    )
+  }, [clientes, busqueda])
 
   const abrirNuevo = () => {
     setEditando(null)
@@ -77,7 +87,12 @@ export default function Clientes() {
   }
 
   const borrar = async (c: Usuario) => {
-    if (!window.confirm(`¿Eliminar al cliente "${c.nombre}"?`)) return
+    if (
+      !window.confirm(
+        `¿Eliminar al cliente "${c.nombre}"?\n\nSe borrarán también sus suscripciones, pagos y comisiones asociadas.`,
+      )
+    )
+      return
     try {
       await eliminarCliente(c.id)
       await cargar()
@@ -90,7 +105,7 @@ export default function Clientes() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Clientes</h1>
           <p className="text-sm text-slate-500">Alta, baja y modificación de clientes</p>
@@ -98,13 +113,27 @@ export default function Clientes() {
         <Button onClick={abrirNuevo}>+ Nuevo cliente</Button>
       </header>
 
+      <div className="relative max-w-sm">
+        <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input
+          className="pl-9"
+          placeholder="Buscar por nombre, email o teléfono…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </div>
+
+      <p className="text-xs text-slate-400">
+        Mostrando {filtrados.length} de {clientes.length} clientes.
+      </p>
+
       {clientes.length === 0 ? (
         <Loading />
       ) : (
         <Table
           headers={['Nombre', 'Email', 'Teléfono', 'Referido por', 'Registro', 'Acciones']}
         >
-          {clientes.map((c) => {
+          {filtrados.map((c) => {
             const agente = agentes.find((a) => a.id === c.referido_por)
             return (
               <tr key={c.id}>

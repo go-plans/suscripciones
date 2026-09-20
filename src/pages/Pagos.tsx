@@ -7,7 +7,7 @@ import {
   registrarPago,
 } from '../lib/api'
 import type { Moneda, PagoRow, SuscripcionRow, Usuario } from '../lib/types'
-import { fmtBS, fmtDate, fmtUSD, round2 } from '../lib/format'
+import { fmtNum, fmtUSDT, fmtUSD, fmtVES, round2 } from '../lib/format'
 import {
   Button,
   Card,
@@ -19,6 +19,8 @@ import {
   Table,
   Td,
 } from '../components/ui'
+import { NuevoCliente } from '../components/inline'
+import { IconRefresh } from '../components/icons'
 
 const METODOS_PAGO = [
   'Zelle',
@@ -39,7 +41,19 @@ const estadoInicial = {
   monto: '',
   moneda: 'USD' as Moneda,
   tasa: '',
+  tasa_binance: '',
   metodo_pago: '',
+}
+
+type FormState = typeof estadoInicial
+
+// Lee la tasa oficial del día desde dolarapi (fuente pública con CORS habilitado)
+async function leerTasaDolarApi(): Promise<number | null> {
+  const res = await fetch('https://dolarapi.com/v1/dolares/oficial')
+  if (!res.ok) throw new Error('dolarapi no respondió')
+  const data = (await res.json()) as { venta?: number; promedio?: number; compra?: number }
+  const v = Number(data.venta ?? data.promedio ?? data.compra)
+  return v > 0 ? v : null
 }
 
 export default function Pagos() {
@@ -48,8 +62,10 @@ export default function Pagos() {
   const [pagos, setPagos] = useState<PagoRow[]>([])
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
-  const [form, setForm] = useState(estadoInicial)
+  const [form, setForm] = useState<FormState>(estadoInicial)
   const [asign, setAsign] = useState<Record<string, Asignacion>>({})
+  const [guardando, setGuardando] = useState(false)
+  const [reflejando, setReflejando] = useState(false)
 
   const cargar = useCallback(async () => {
     try {
@@ -73,6 +89,11 @@ export default function Pagos() {
     void cargar()
   }, [cargar])
 
+  const cargarY = async (actualizar: (f: FormState) => FormState) => {
+    await cargar()
+    setForm((f) => actualizar(f))
+  }
+
   const activasDelCliente = useMemo(
     () => susc.filter((s) => s.cliente_id === form.cliente_id && s.estado === 'activa'),
     [susc, form.cliente_id],
@@ -93,12 +114,12 @@ export default function Pagos() {
 
   const montoNum = useMemo(() => Number(form.monto) || 0, [form.monto])
   const tasaNum = useMemo(() => Number(form.tasa) || 0, [form.tasa])
+  const tasaBinanceNum = useMemo(() => Number(form.tasa_binance) || 0, [form.tasa_binance])
 
-  // Equivalente en USD según la moneda recibida (calculadora BCV)
+  // Equivalente en USD según la moneda recibida (calculadora BCV / Binance 1:1 con USD)
   const equivalente = useMemo(() => {
     if (form.moneda === 'BS') return tasaNum > 0 ? round2(montoNum / tasaNum) : 0
-    // USD y USDT se tratan 1:1 con el dólar
-    return round2(montoNum)
+    return round2(montoNum) // USD y USDT 1:1 con el dólar
   }, [form.moneda, montoNum, tasaNum])
 
   const totalAsignado = useMemo(
@@ -127,7 +148,40 @@ export default function Pagos() {
     setAsign((prev) => ({ ...prev, ...next }))
   }
 
+  const reflejarTasa = async () => {
+    setReflejando(true)
+    setExito('')
+    try {
+      const v = await leerTasaDolarApi()
+      if (v) {
+        setForm((f) => ({ ...f, tasa: String(v) }))
+        setExito(`Tasa BCV reflejada: ${fmtNum(v, 4)} VES/USD (fuente: dolarapi)`)
+      } else {
+        throw new Error('valor inválido')
+      }
+    } catch (e) {
+      // Fallback: última tasa guardada en el sistema
+      try {
+        const t = await fetchTasaDelDia()
+        if (t) {
+          setForm((f) => ({ ...f, tasa: String(t) }))
+          setExito(`Sin acceso a dolarapi: se usó la última tasa del sistema (${fmtNum(t, 4)})`)
+        } else {
+          setError('No se pudo obtener la tasa. Verifica tu conexión.')
+        }
+      } catch {
+        setError('No se pudo obtener la tasa. Verifica tu conexión.')
+      }
+    } finally {
+      setReflejando(false)
+    }
+  }
+
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
+    setError('')
+    setExito('')
     try {
       const asignados = Object.entries(asign)
         .filter(([, a]) => a.checked && Number(a.monto) > 0)
@@ -140,17 +194,22 @@ export default function Pagos() {
         monto_pagado: montoNum,
         moneda: form.moneda,
         tasa_bcv_aplicada: form.moneda === 'BS' ? tasaNum : null,
+        tasa_cambio_binance: form.moneda === 'USDT' ? tasaBinanceNum || null : null,
         equivalente_usd: equivalente,
         metodo_pago: form.metodo_pago,
         asignados,
       })
-      setExito('Pago registrado correctamente ✓ (comisiones de 30% generadas por el trigger)')
+      setExito(
+        'Pago registrado correctamente. Si la plataforma genera comisión (30%), ya quedó pendiente para el agente referido.',
+      )
       setForm(estadoInicial)
       const t = await fetchTasaDelDia()
       if (t != null) setForm((f) => ({ ...f, tasa: String(t) }))
       setPagos(await fetchPagos())
     } catch (e) {
       setError((e as Error).message)
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -161,7 +220,12 @@ export default function Pagos() {
     totalAsignado > 0 &&
     Math.abs(diferencia) < 0.01
 
-  if (error) return <ErrorMsg message={error} />
+  const fmtMontopago = (p: PagoRow) =>
+    p.moneda === 'BS'
+      ? fmtVES(p.monto_pagado)
+      : p.moneda === 'USDT'
+        ? fmtUSDT(p.monto_pagado)
+        : fmtUSD(p.monto_pagado)
 
   return (
     <div className="space-y-6">
@@ -175,6 +239,7 @@ export default function Pagos() {
       {exito ? (
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{exito}</p>
       ) : null}
+      {error ? <ErrorMsg message={error} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="1 · Datos del pago">
@@ -191,6 +256,9 @@ export default function Pagos() {
                   </option>
                 ))}
               </Select>
+              <NuevoCliente
+                onCreated={(id) => void cargarY((f) => ({ ...f, cliente_id: id }))}
+              />
             </Field>
             <div className="grid grid-cols-3 gap-3">
               <Field label="Monto *">
@@ -212,22 +280,50 @@ export default function Pagos() {
                   <option value="USDT">USDT</option>
                 </Select>
               </Field>
-              <Field label="Tasa BCV *">
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.0001"
-                  value={form.tasa}
-                  onChange={(e) => setForm({ ...form, tasa: e.target.value })}
-                />
-              </Field>
+              {form.moneda === 'BS' ? (
+                <Field label="Tasa BCV *">
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.0001"
+                    value={form.tasa}
+                    onChange={(e) => setForm({ ...form, tasa: e.target.value })}
+                  />
+                </Field>
+              ) : form.moneda === 'USDT' ? (
+                <Field label="Tasa Binance *">
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.0001"
+                    value={form.tasa_binance}
+                    onChange={(e) => setForm({ ...form, tasa_binance: e.target.value })}
+                  />
+                </Field>
+              ) : (
+                <Field label="Tasa">
+                  <Input value="No aplica (1:1)" disabled />
+                </Field>
+              )}
             </div>
+
             {form.moneda === 'BS' ? (
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={() => void reflejarTasa()} disabled={reflejando}>
+                  <IconRefresh className={`h-4 w-4 ${reflejando ? 'animate-spin' : ''}`} />
+                  {reflejando ? 'Reflejando…' : 'Reflejar tasa'}
+                </Button>
+                <span className="text-xs text-slate-400">
+                  Trae la tasa oficial del día (dolarapi).
+                </span>
+              </div>
+            ) : form.moneda === 'USDT' ? (
               <p className="text-xs text-slate-400">
-                💡 Tasa cargada automáticamente del día (cron `tasas-bcv-diaria`).{/*
-              */}
+                La tasa de Binance se guarda como referencia con el cobro en USDT (el equival
+                en USD es 1:1).
               </p>
             ) : null}
+
             <Field label="Método de pago">
               <Select
                 value={form.metodo_pago}
@@ -244,7 +340,7 @@ export default function Pagos() {
           </div>
         </Card>
 
-        <Card title="2 · Equivalente USD (calculadora BCV)">
+        <Card title="2 · Equivalente USD (calculadora)">
           <div className="rounded-xl bg-indigo-50 p-4 text-center">
             <p className="text-xs font-medium uppercase tracking-wide text-indigo-500">
               Equivalente en USD
@@ -252,8 +348,10 @@ export default function Pagos() {
             <p className="text-4xl font-bold text-indigo-700">{fmtUSD(equivalente)}</p>
             <p className="mt-1 text-xs text-indigo-400">
               {form.moneda === 'BS'
-                ? `${fmtBS(montoNum)} ÷ tasa ${tasaNum}`
-                : `${form.moneda} 1:1 con USD (tasa no aplica)`}
+                ? `${fmtVES(montoNum)} ÷ tasa ${tasaNum}`
+                : form.moneda === 'USDT'
+                  ? `${fmtUSDT(montoNum)} = ${fmtUSD(montoNum)} (1:1)`
+                  : `${fmtUSD(montoNum)} 1:1 con USD`}
             </p>
           </div>
 
@@ -264,7 +362,7 @@ export default function Pagos() {
             <p className="text-sm text-slate-400">Este cliente no tiene suscripciones activas.</p>
           ) : (
             <>
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <Button variant="secondary" onClick={repartirAutomatico}>
                   Repartir automáticamente
                 </Button>
@@ -276,13 +374,17 @@ export default function Pagos() {
                   </span>
                 </span>
               </div>
+              <p className="mb-2 text-xs text-slate-400">
+                Repartir automáticamente divide el equivalente en partes iguales entre las
+                suscripciones marcadas; la última recibe el resto para que cuadre exacto.
+              </p>
               <div className="space-y-2">
                 {activasDelCliente.map((s) => {
                   const a = asign[s.id] ?? { checked: true, monto: '0' }
                   return (
                     <div
                       key={s.id}
-                      className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2"
+                      className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2"
                     >
                       <input
                         type="checkbox"
@@ -301,7 +403,8 @@ export default function Pagos() {
                           {fmtUSD(s.planes?.precio_venta_usd ?? 0)}
                         </p>
                         <p className="truncate text-xs text-slate-400">
-                          {s.usuarios?.nombre} — vence {fmtDate(s.fecha_corte_cliente)}
+                          {s.usuarios?.nombre} · vence:{' '}
+                          {new Date(s.fecha_corte_cliente).toLocaleDateString('es-VE')}
                         </p>
                       </div>
                       <Input
@@ -326,8 +429,8 @@ export default function Pagos() {
           )}
 
           <div className="mt-4 flex justify-end">
-            <Button onClick={() => void guardar()} disabled={!puedeGuardar}>
-              Registrar pago
+            <Button onClick={() => void guardar()} disabled={!puedeGuardar || guardando}>
+              {guardando ? 'Registrando…' : 'Registrar pago'}
             </Button>
           </div>
           {!puedeGuardar && form.cliente_id ? (
@@ -347,10 +450,8 @@ export default function Pagos() {
             {pagos.map((p) => (
               <tr key={p.id}>
                 <Td className="font-medium">{p.usuarios?.nombre ?? '—'}</Td>
-                <Td>{fmtDate(p.fecha_pago)}</Td>
-                <Td>
-                  {p.moneda === 'BS' ? fmtBS(p.monto_pagado) : `$${p.monto_pagado}`}
-                </Td>
+                <Td>{new Date(p.fecha_pago).toLocaleDateString('es-VE')}</Td>
+                <Td>{fmtMontopago(p)}</Td>
                 <Td>
                   <span
                     className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -364,7 +465,15 @@ export default function Pagos() {
                     {p.moneda}
                   </span>
                 </Td>
-                <Td>{p.tasa_bcv_aplicada ?? '—'}</Td>
+                <Td>
+                  {p.moneda === 'USDT'
+                    ? p.tasa_cambio_binance != null
+                      ? fmtNum(p.tasa_cambio_binance, 4)
+                      : '—'
+                    : p.tasa_bcv_aplicada != null
+                      ? fmtNum(p.tasa_bcv_aplicada, 4)
+                      : '—'}
+                </Td>
                 <Td className="font-semibold">{fmtUSD(p.equivalente_usd)}</Td>
                 <Td>{p.metodo_pago ?? '—'}</Td>
               </tr>

@@ -8,6 +8,7 @@ import {
   Card,
   ErrorMsg,
   Loading,
+  Select,
   StatCard,
   Table,
   Td,
@@ -15,6 +16,7 @@ import {
 
 export default function Comisiones() {
   const [comisiones, setComisiones] = useState<ComisionRow[]>([])
+  const [filtro, setFiltro] = useState<'todas' | 'pendiente' | 'liquidada'>('todas')
   const [error, setError] = useState('')
 
   const cargar = useCallback(async () => {
@@ -29,6 +31,11 @@ export default function Comisiones() {
   useEffect(() => {
     void cargar()
   }, [cargar])
+
+  const filtradas = useMemo(
+    () => (filtro === 'todas' ? comisiones : comisiones.filter((c) => c.estado === filtro)),
+    [comisiones, filtro],
+  )
 
   const liquidar = async (id: string) => {
     if (!window.confirm('¿Marcar esta comisión como liquidada?')) return
@@ -68,27 +75,43 @@ export default function Comisiones() {
         {comisiones.length === 0 ? (
           <Loading />
         ) : (
-          <Table headers={['Agente', 'Fecha', 'Monto USD', 'Estado', 'Acciones']}>
-            {comisiones.map((c) => (
-              <tr key={c.id}>
-                <Td className="font-medium">{c.usuarios?.nombre ?? '—'}</Td>
-                <Td>{fmtDateTime(c.created_at)}</Td>
-                <Td className="font-semibold">{fmtUSD(c.monto_comision_usd)}</Td>
-                <Td>
-                  <Badge value={c.estado} />
-                </Td>
-                <Td>
-                  {c.estado === 'pendiente' ? (
-                    <Button variant="secondary" onClick={() => void liquidar(c.id)}>
-                      Liquidar
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-slate-400">—</span>
-                  )}
-                </Td>
-              </tr>
-            ))}
-          </Table>
+          <>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Filtrar
+              </span>
+              <Select
+                className="w-48"
+                value={filtro}
+                onChange={(e) => setFiltro(e.target.value as typeof filtro)}
+              >
+                <option value="todas">Todas</option>
+                <option value="pendiente">Pendientes</option>
+                <option value="liquidada">Liquidadas</option>
+              </Select>
+            </div>
+            <Table headers={['Agente', 'Fecha', 'Monto USD', 'Estado', 'Acciones']}>
+              {filtradas.map((c) => (
+                <tr key={c.id}>
+                  <Td className="font-medium">{c.usuarios?.nombre ?? '—'}</Td>
+                  <Td>{fmtDateTime(c.created_at)}</Td>
+                  <Td className="font-semibold">{fmtUSD(c.monto_comision_usd)}</Td>
+                  <Td>
+                    <Badge value={c.estado} />
+                  </Td>
+                  <Td>
+                    {c.estado === 'pendiente' ? (
+                      <Button variant="secondary" onClick={() => void liquidar(c.id)}>
+                        Liquidar
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </Td>
+                </tr>
+              ))}
+            </Table>
+          </>
         )}
       </Card>
     </div>

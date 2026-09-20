@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   cambiarEstadoCuenta,
   crearCuentaMadre,
@@ -6,8 +6,8 @@ import {
   fetchPlataformas,
   fetchProveedores,
 } from '../lib/api'
-import type { CuentaMadreRow } from '../lib/types'
-import { fmtDate, fmtUSD, hoy } from '../lib/format'
+import type { CuentaMadreRow, Plataforma, Proveedor } from '../lib/types'
+import { fmtDate, fmtUSD } from '../lib/format'
 import {
   Badge,
   Button,
@@ -20,6 +20,8 @@ import {
   Table,
   Td,
 } from '../components/ui'
+import { NuevaPlataforma, NuevoProveedor } from '../components/inline'
+import { IconInfinity, IconSearch } from '../components/icons'
 
 const vacio = {
   proveedor_id: '',
@@ -27,16 +29,19 @@ const vacio = {
   correo_cuenta: '',
   cupos_totales: '4',
   costo_renovacion_usd: '',
-  fecha_corte_proveedor: hoy(),
+  fecha_corte_proveedor: '',
 }
+
+type FormState = typeof vacio
 
 export default function CuentasMadre() {
   const [cuentas, setCuentas] = useState<CuentaMadreRow[]>([])
-  const [plataformas, setPlataformas] = useState<Array<{ id: string; nombre: string }>>([])
-  const [proveedores, setProveedores] = useState<Array<{ id: string; nombre: string }>>([])
+  const [plataformas, setPlataformas] = useState<Plataforma[]>([])
+  const [proveedores, setProveedores] = useState<Proveedor[]>([])
+  const [busqueda, setBusqueda] = useState('')
   const [error, setError] = useState('')
   const [modal, setModal] = useState(false)
-  const [form, setForm] = useState(vacio)
+  const [form, setForm] = useState<FormState>(vacio)
 
   const cargar = useCallback(async () => {
     try {
@@ -58,15 +63,30 @@ export default function CuentasMadre() {
     void cargar()
   }, [cargar])
 
+  const cargarY = async (actualizar: (f: FormState) => FormState) => {
+    await cargar()
+    setForm((f) => actualizar(f))
+  }
+
+  const filtradas = useMemo(() => {
+    const q = busqueda.trim().toLowerCase()
+    if (!q) return cuentas
+    return cuentas.filter((c) =>
+      [c.correo_cuenta, c.plataformas?.nombre, c.proveedores?.nombre]
+        .filter(Boolean)
+        .some((v) => v!.toLowerCase().includes(q)),
+    )
+  }, [cuentas, busqueda])
+
   const guardar = async () => {
     try {
       await crearCuentaMadre({
-        proveedor_id: form.proveedor_id,
+        proveedor_id: form.proveedor_id || null,
         plataforma_id: form.plataforma_id,
         correo_cuenta: form.correo_cuenta,
         cupos_totales: Number(form.cupos_totales),
-        costo_renovacion_usd: Number(form.costo_renovacion_usd),
-        fecha_corte_proveedor: form.fecha_corte_proveedor,
+        costo_renovacion_usd: Number(form.costo_renovacion_usd || 0),
+        fecha_corte_proveedor: form.fecha_corte_proveedor || null,
       })
       setModal(false)
       setForm(vacio)
@@ -90,13 +110,25 @@ export default function CuentasMadre() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Cuentas madre</h1>
-          <p className="text-sm text-slate-500">Inventario comprado a proveedores</p>
+          <p className="text-sm text-slate-500">
+            Inventario comprado a proveedores o compradas directo (sin proveedor)
+          </p>
         </div>
         <Button onClick={() => setModal(true)}>+ Nueva cuenta madre</Button>
       </header>
+
+      <div className="relative max-w-sm">
+        <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input
+          className="pl-9"
+          placeholder="Buscar por correo, plataforma o proveedor…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </div>
 
       {cuentas.length === 0 ? (
         <Loading />
@@ -104,16 +136,24 @@ export default function CuentasMadre() {
         <Table
           headers={['Correo', 'Proveedor', 'Plataforma', 'Cupos', 'Costo', 'Fecha corte', 'Estado', '']}
         >
-          {cuentas.map((c) => (
+          {filtradas.map((c) => (
             <tr key={c.id}>
               <Td className="font-mono text-xs font-medium">{c.correo_cuenta}</Td>
-              <Td>{c.proveedores?.nombre ?? '—'}</Td>
+              <Td>{c.proveedores?.nombre ?? 'Directo'}</Td>
               <Td>{c.plataformas?.nombre ?? '—'}</Td>
               <Td>
                 {c.cupos_ocupados}/{c.cupos_totales}
               </Td>
               <Td>{fmtUSD(c.costo_renovacion_usd)}</Td>
-              <Td>{fmtDate(c.fecha_corte_proveedor)}</Td>
+              <Td>
+                {c.fecha_corte_proveedor ? (
+                  fmtDate(c.fecha_corte_proveedor)
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                    <IconInfinity className="h-3.5 w-3.5" /> Sin cortes
+                  </span>
+                )}
+              </Td>
               <Td>
                 <Badge value={c.estado} />
               </Td>
@@ -129,18 +169,19 @@ export default function CuentasMadre() {
 
       <Modal open={modal} title="Nueva cuenta madre" onClose={() => setModal(false)}>
         <div className="space-y-3">
-          <Field label="Proveedor *">
+          <Field label="Proveedor">
             <Select
               value={form.proveedor_id}
               onChange={(e) => setForm({ ...form, proveedor_id: e.target.value })}
             >
-              <option value="">Selecciona…</option>
+              <option value="">Directo (sin proveedor)</option>
               {proveedores.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nombre}
                 </option>
               ))}
             </Select>
+            <NuevoProveedor onCreated={(id) => void cargarY((f) => ({ ...f, proveedor_id: id }))} />
           </Field>
           <Field label="Plataforma *">
             <Select
@@ -154,6 +195,7 @@ export default function CuentasMadre() {
                 </option>
               ))}
             </Select>
+            <NuevaPlataforma onCreated={(id) => void cargarY((f) => ({ ...f, plataforma_id: id }))} />
           </Field>
           <Field label="Correo de la cuenta *">
             <Input
@@ -181,12 +223,16 @@ export default function CuentasMadre() {
               />
             </Field>
           </div>
-          <Field label="Fecha corte al proveedor *">
+          <Field label="Fecha corte al proveedor">
             <Input
               type="date"
               value={form.fecha_corte_proveedor}
               onChange={(e) => setForm({ ...form, fecha_corte_proveedor: e.target.value })}
             />
+            <p className="text-xs text-slate-400">
+              Déjala vacía si la cuenta no tiene renovación (p. ej. Canva docente, dura para
+              siempre).
+            </p>
           </Field>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setModal(false)}>
@@ -195,10 +241,7 @@ export default function CuentasMadre() {
             <Button
               onClick={() => void guardar()}
               disabled={
-                !form.proveedor_id ||
-                !form.plataforma_id ||
-                !form.correo_cuenta.trim() ||
-                !form.costo_renovacion_usd
+                !form.plataforma_id || !form.correo_cuenta.trim() || !form.cupos_totales
               }
             >
               Guardar

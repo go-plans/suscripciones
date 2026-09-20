@@ -51,6 +51,23 @@
 - **chore** `.env` movido a `app/.env` (Vite solo lee `.env` desde la carpeta del proyecto).
 - **docs** `06-desarrollo.md` actualizado (deps, estructura `src/`, nota de seguridad, troubleshooting de npm en Windows).
 
+## 2026-09-19 — Fase 2.1 · Gestión pulida
+
+### v0.2.1
+
+- **fix** Eliminar clientes, suscripciones, pagos y cuentas madre ya **no falla por FK**: migración `0005_sistema_gestion.sql` convierte las restricciones a `ON DELETE CASCADE` (clientes → suscripciones/pagos → asignaciones → comisiones; proveedores → SET NULL + cuentas como "Directo"). Verificado end-to-end en el panel (crear + borrar cliente).
+- **feat** Registro **inline** desde cualquier formulario: cliente/plan/cuenta madre dentro del modal de Suscripciones, cliente en Pagos, y proveedor/plataforma en Cuentas madre (`src/components/inline.tsx`).
+- **feat** Nueva página **Plataformas** (CRUD) en `/plataformas`: activa/inactiva + toggle "genera comisión 30%".
+- **feat** Comisiones **configurables por plataforma** (`plataformas.aplica_comision`): el trigger solo genera el 30% en las plataformas marcadas (por defecto solo Google One).
+- **feat** Cuentas madre: **proveedor opcional** ("Directo") y **fecha de corte opcional** (cuentas eternas tipo Canva docente) → la fila muestra "Sin cortes" y desaparecen de los vencimientos.
+- **feat** Pagos: campo **tasa de Binance (USDT)** persistido en `pagos_ingresos.tasa_cambio_binance` (la de BCV es distinta), **botón "Reflejar tasa"** que trae la oficial del día desde dolarapi.com (fallback: última del sistema), y **protección contra doble clic** al registrar.
+- **feat** Suscripciones: campos **fecha de inicio + estado** para poder cargar suscripciones vendidas/contratadas antes del sistema.
+- **feat** Formatos es-VE en toda la app: punto para miles y coma para decimales; **"VES"** (ya no "Bs.S"), "USD" y "USDT".
+- **feat** Iconos **vectoriales** (SVG tipo Lucide) reemplazan todos los emojis (`src/components/icons.tsx`).
+- **feat** Rendimiento: **carga perezosa** por página (`React.lazy` + Suspense, split de chunks en el build) + **caché en memoria de 20 s** en `src/lib/api.ts` (invalidación automática en cada escritura).
+- **feat** Tablas más organizadas: cabecera fija, scroll interno, filas alternadas/hover, buscadores en Clientes, Suscripciones y Cuentas madre; filtro por estado en Comisiones.
+- **chore** `crearCliente`, `crearPlan`, `crearCuentaMadre`, `crearProveedor`, `crearPlataforma` devuelven el `id` para seleccionarlo al vuelo tras crearlo.
+
 ## Próximos
 
 - **Fase 3** Catálogo público de venta con la vista `v_catalogo_publico`.

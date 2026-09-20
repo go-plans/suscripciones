@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
+import { IconX } from './icons'
 
 // ---------- Botones ----------
 type BtnVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
@@ -57,12 +58,12 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 // ---------- Tablas ----------
 export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+    <div className="max-h-[72vh] overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <table className="w-full min-w-max text-left text-sm">
+        <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             {headers.map((h) => (
-              <th key={h} className="px-4 py-3 font-semibold">
+              <th key={h} className="border-b border-slate-200 bg-slate-50 px-4 py-3 font-semibold">
                 {h}
               </th>
             ))}
@@ -152,7 +153,7 @@ export function Modal({
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           <Button variant="ghost" onClick={onClose} aria-label="Cerrar">
-            ✕
+            <IconX />
           </Button>
         </div>
         {children}

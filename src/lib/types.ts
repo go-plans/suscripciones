@@ -17,6 +17,8 @@ export interface Plataforma {
   nombre: string
   logo_url: string | null
   activa: boolean
+  aplica_comision: boolean
+  created_at: string
 }
 
 export interface Plan {
@@ -24,6 +26,10 @@ export interface Plan {
   plataforma_id: string
   duracion_dias: number
   precio_venta_usd: number
+}
+
+export interface PlanRow extends Plan {
+  plataformas?: { nombre?: string } | null
 }
 
 export interface Proveedor {
@@ -37,14 +43,19 @@ export type EstadoCuenta = 'activa' | 'suspendida' | 'baja'
 
 export interface CuentaMadre {
   id: string
-  proveedor_id: string
+  proveedor_id: string | null
   plataforma_id: string
   correo_cuenta: string
   cupos_totales: number
   cupos_ocupados: number
   costo_renovacion_usd: number
-  fecha_corte_proveedor: string
+  fecha_corte_proveedor: string | null
   estado: EstadoCuenta
+}
+
+export interface CuentaMadreRow extends CuentaMadre {
+  proveedores?: { nombre?: string } | null
+  plataformas?: { nombre?: string } | null
 }
 
 export type EstadoSuscripcion = 'activa' | 'vencida' | 'cancelada'
@@ -59,13 +70,30 @@ export interface Suscripcion {
   estado: EstadoSuscripcion
 }
 
+export interface SuscripcionRow extends Suscripcion {
+  usuarios?: { nombre?: string; email?: string | null } | null
+  planes?: PlanRow | null
+  cuentas_madre?: {
+    correo_cuenta?: string
+    cupos_ocupados?: number
+    cupos_totales?: number
+    plataformas?: { nombre?: string } | null
+  } | null
+}
+
+export type EstadoComision = 'pendiente' | 'liquidada'
+
 export interface Comision {
   id: string
   agente_id: string
   pago_id: string
   monto_comision_usd: number
-  estado: 'pendiente' | 'liquidada'
+  estado: EstadoComision
   created_at: string
+}
+
+export interface ComisionRow extends Comision {
+  usuarios?: { nombre?: string } | null
 }
 
 export interface TasaCambio {
@@ -82,9 +110,14 @@ export interface PagoIngreso {
   monto_pagado: number
   moneda: Moneda
   tasa_bcv_aplicada: number | null
+  tasa_cambio_binance: number | null
   equivalente_usd: number
   metodo_pago: string | null
   fecha_pago: string
+}
+
+export interface PagoRow extends PagoIngreso {
+  usuarios?: { nombre?: string } | null
 }
 
 export interface PagoSuscripcion {
@@ -104,33 +137,4 @@ export interface VencimientoProveedor {
   costo_renovacion_usd: number
   fecha_corte_proveedor: string
   dias_restantes: number
-}
-
-// ------- Vistas enriquecidas para listados (embeds de PostgREST) -------
-
-export interface CuentaMadreRow extends CuentaMadre {
-  proveedores?: { nombre?: string } | null
-  plataformas?: { nombre?: string } | null
-}
-
-export interface SuscripcionRow extends Suscripcion {
-  usuarios?: { nombre?: string; email?: string | null } | null
-  planes?: {
-    precio_venta_usd?: number
-    duracion_dias?: number
-    plataformas?: { nombre?: string } | null
-  } | null
-  cuentas_madre?: {
-    correo_cuenta?: string
-    cupos_ocupados?: number
-    cupos_totales?: number
-  } | null
-}
-
-export interface ComisionRow extends Comision {
-  usuarios?: { nombre?: string } | null
-}
-
-export interface PagoRow extends PagoIngreso {
-  usuarios?: { nombre?: string } | null
 }

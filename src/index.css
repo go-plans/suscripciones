@@ -11,3 +11,27 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* Filas alternadas y hover en tablas */
+tbody tr:nth-child(odd) {
+  background-color: #fff;
+}
+tbody tr:nth-child(even) {
+  background-color: rgb(248 250 252);
+}
+tbody tr:hover {
+  background-color: rgb(238 242 255);
+}
+
+/* Scrollbar discreto para las tablas */
+::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

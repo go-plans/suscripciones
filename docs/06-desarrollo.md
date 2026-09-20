@@ -35,7 +35,7 @@ npm run dev          # http://localhost:5173
 | Paquete | Uso |
 |---|---|
 | `@supabase/supabase-js` | cliente REST (PostgREST) |
-| `react-router-dom` (v7) | rutas `/`, `/clientes`, `/suscripciones`, `/cuentas-madre`, `/proveedores`, `/pagos`, `/comisiones` |
+| `react-router-dom` (v7) | rutas `/`, `/clientes`, `/suscripciones`, `/plataformas`, `/cuentas-madre`, `/proveedores`, `/pagos`, `/comisiones` |
 | `tailwindcss` + `@tailwindcss/vite` (v4) | estilos utilitarios (plugin de Vite, import en `index.css`) |
 
 > `date-fns` **no** se usa: las utilidades de fecha/moneda viven en `src/lib/format.ts` (Intl nativo).
@@ -75,26 +75,29 @@ supabase functions deploy fetch-bcv --no-verify-jwt
 - Cada cambio que afecte comportamiento se refleja en `docs/08-changelog.md`.
 - **Consultas a datos**: todas a través de `src/lib/api.ts` (capa única); cambiar aquí es cambiar todo.
 
-## 7. Estructura del frontend (Fase 2)
+## 7. Estructura del frontend (Fase 2 / 2.1)
 
 ```
 src/
 ├── lib/
 │   ├── supabase.ts   # cliente (service_role en Fase 2 — ver nota de seguridad)
-│   ├── api.ts        # capa única de acceso a datos (clientes, pagos, dashboard…)
+│   ├── api.ts        # capa única de acceso a datos (listas con caché TTL 20 s + invalidación en escrituras)
 │   ├── types.ts      # tipos que reflejan el esquema de la DB
-│   └── format.ts     # formatos es-VE (USD, BS, fechas)
+│   └── format.ts     # formatos es-VE: VES/USD/USDT (punto-miles, coma-decimales), fechas
 ├── components/
-│   ├── ui.tsx        # primitivas (Button, Input, Select, Table, Badge, Modal, StatCard…)
-│   └── Layout.tsx    # sidebar + <Outlet/>
-└── pages/
+│   ├── icons.tsx     # iconos vectoriales tipo Lucide (sin emojis)
+│   ├── inline.tsx    # registro inline: NuevoCliente, NuevoPlan, NuevaCuenta, NuevoProveedor, NuevaPlataforma
+│   ├── ui.tsx        # primitivas (Button, Input, Select, Table con cabecera fija, Badge, Modal, StatCard…)
+│   └── Layout.tsx    # sidebar (iconos vectoriales) + <Outlet/>
+└── pages/            # carga perezosa: React.lazy + Suspense (un chunk por página)
     ├── Dashboard.tsx        # KPIs + alertas v_vencimientos_proveedores (≤3 días)
-    ├── Clientes.tsx         # CRUD clientes (+ referido por agente)
-    ├── Suscripciones.tsx    # alta/baja/estado (valida cupos en la DB por trigger)
-    ├── CuentasMadre.tsx     # inventario + suspender/activar
+    ├── Clientes.tsx         # CRUD clientes (+ referido por agente) + buscador
+    ├── Suscripciones.tsx    # alta con registro inline + fecha de inicio/estado (históricas)
+    ├── Plataformas.tsx      # CRUD plataformas + toggle comisión 30%
+    ├── CuentasMadre.tsx     # inventario (proveedor/corte opcionales) + inline + buscador
     ├── Proveedores.tsx      # CRUD simple
-    ├── Pagos.tsx            # calculadora BCV + distribución + registro
-    └── Comisiones.tsx       # lista 30% + liquidación
+    ├── Pagos.tsx            # calculadora BCV (+ botón "Reflejar tasa" dolarapi), tasa Binance USDT, distribución
+    └── Comisiones.tsx       # lista 30% + liquidación + filtro por estado
 ```
 
 ### Nota de seguridad (IMPORTANTE)

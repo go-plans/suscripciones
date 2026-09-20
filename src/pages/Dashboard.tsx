@@ -61,7 +61,7 @@ export default function Dashboard() {
         <Loading />
       )}
 
-      <Card title="⚠️ Vencimientos de proveedores (próximos 3 días)">
+      <Card title="Vencimientos de proveedores (próximos 3 días)">
         {vencimientos.length === 0 ? (
           <p className="text-sm text-slate-400">
             No hay cuentas madre por vencer en los próximos 3 días.
