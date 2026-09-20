@@ -1,0 +1,24 @@
+feat(v0.3.1): pagos avanzados + rediseño visual tienda
+
+Pagos:
+- Fecha editable (permite cobros atrasados antes de la web)
+- Moneda automática según método de pago
+- Método 'Binance' nuevo, 'Efectivo' retirado
+- Buscador de cliente con componente reutilizable
+- Filtros en tabla (búsqueda, método, moneda, rango fechas)
+- Editar y borrar pagos con recálculo de comisión
+- Límite de pagos subido a 500
+- Migración 0009: CHECK actualizado, trigger fecha_pago, RPC editar_pago
+
+Tienda:
+- Fuentes: Google Sans + Google Sans Display + Canva Sans en /fonts/
+- Diseño visual actualizado para coincidir con imágenes de referencia
+- Google One: '1 año' colores Google, tipografía Display
+- Canva Pro: logo itálico, tarjetas horizontales con divisor
+- Spotify Premium: logo ♫, tarjetas negras con verde
+
+Fixes:
+- fmtDate: parsea date-only en hora local (no UTC) - evita desfase -1 día
+- precioUsd: formato '2.99$' (punto decimal, $ al final)
+
+Docs actualizadas: changelog, flujos de negocio, base de datos
