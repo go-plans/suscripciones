@@ -49,6 +49,12 @@ VITE_SUPABASE_ANON_KEY=...
 
 ## 3. Desplegar la Edge Function fetch-bcv
 
+> La función extrae la tasa oficial del **sitio del BCV** (`bcv.org.ve`, bloque USD de
+> la página de tipo de cambio de referencia) y la guarda en `tasas_cambio`. Como la
+> página del BCV no envía cabeceras CORS, el scrape se hace server-side (Deno), nunca
+> desde el navegador. El botón **"Reflejar tasa"** de Pagos la invoca y cae a la última
+> tasa almacenada si la función aún no está desplegada.
+
 ```bash
 supabase login
 supabase link --project-ref xbmewcmpfnligeodggop

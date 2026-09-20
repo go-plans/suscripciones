@@ -31,7 +31,7 @@ Aplicación web **cliente-servidor** con un backend gestionado (BaaS). El fronte
 | UI | Tailwind + shadcn/ui | Componentes accesibles y personalizables, DataTables para inventario |
 | Fechas/moneda | date-fns/dayjs + `Intl.NumberFormat` | Cálculo estricto de vencimientos y formato BS/USD |
 | Backend | Supabase/PostgreSQL | SQL exacto, RLS, triggers, cron |
-| Calculadora BCV | Edge Function `fetch-bcv` + pg_cron | Tasa oficial diaria (dolarapi.com) |
+| Calculadora BCV | Edge Function `fetch-bcv` + pg_cron | Tasa oficial diaria extraída de bcv.org.ve |
 
 ## 3. Estructura de carpetas
 
@@ -70,5 +70,5 @@ app/
 ## 6. Limitaciones conocidas
 
 - La **conexión directa** a la base (IPv6) no funciona desde la red actual del cliente; todo acceso DB se hace por pooler o por el dashboard.
-- La Edge Function `fetch-bcv` depende de la disponibilidad de `dolarapi.com`. Si cambia, hay que actualizar la fuente en la función.
+- La Edge Function `fetch-bcv` depende de la estructura actual del sitio oficial del BCV (`bcv.org.ve`), que no envía cabeceras CORS: por eso el scrape es server-side. Si el BCV cambia el HTML, hay que actualizar el parser en `supabase/functions/fetch-bcv/index.ts`.
 - RLS exige que el admin/all users tengan su fila en `usuarios` con `id = auth.uid()`.

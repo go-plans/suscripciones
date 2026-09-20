@@ -102,7 +102,7 @@ src/
     ├── Plataformas.tsx       # CRUD plataformas + toggle comisión 30%
     ├── CuentasMadre.tsx      # inventario (proveedor/corte opcionales) + inline + buscador
     ├── Proveedores.tsx       # CRUD simple
-    ├── Pagos.tsx             # calculadora BCV (+ botón "Reflejar tasa" dolarapi), tasa Binance USDT, distribución
+    ├── Pagos.tsx             # calculadora BCV (+ botón "Reflejar tasa" desde bcv.org.ve vía fetch-bcv), tasa Binance USDT, distribución
     └── Comisiones.tsx        # lista 30% + liquidación + filtro por estado
 ```
 

@@ -2,6 +2,14 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-20 — Fase 2.4 · Tasa oficial del BCV
+
+### v0.2.4
+
+- **feat** La tasa oficial ahora se extrae del **sitio oficial del BCV** (`bcv.org.ve`, bloque USD de la página *Tipo de Cambio de Referencia*), no de dolarapi.com. La Edge Function `fetch-bcv` raspea el HTML oficial (server-side, porque la página del BCV no envía cabeceras CORS) y guarda la tasa con la **Fecha Valor** que publica el BCV en `tasas_cambio`.
+- **feat** Botón **"Reflejar tasa"** en Pagos: llama a la Edge Function `fetch-bcv` para reflejar la tasa BCV en vivo (fuente `bcv.org.ve`); si la función aún no está desplegada, cae a la última tasa almacenada en `tasas_cambio` (que también proviene del BCV).
+- **docs** `01-arquitectura`, `02-base-de-datos`, `06-desarrollo`, `07-despliegue` y `ADR/001` actualizados: fuente `bcv.org.ve` y notas de CORS/despliegue del parser.
+
 ## 2026-09-19 — Lanzamiento inicial
 
 ### v0.1.0

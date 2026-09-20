@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, SUPABASE_KEY, SUPABASE_URL } from './supabase'
 import { hoy, round2 } from './format'
 import { errMsg } from './err'
 import type {
@@ -360,6 +360,41 @@ export async function fetchTasaDelDia(): Promise<number | null> {
     const row = data?.[0] as { tasa_bcv?: number } | undefined
     return row?.tasa_bcv ?? null
   })
+}
+
+export type FuenteTasa = 'bcv-directo' | 'sistema' | 'ninguna'
+
+/**
+ * Tasa oficial del día directamente del sitio del BCV.
+ * 1) Invoca la Edge Function `fetch-bcv` (scrape server-side de
+ *    bcv.org.ve — el navegador NO puede leer el sitio por CORS).
+ * 2) Si la función no está desplegada, cae a la última tasa
+ *    almacenada en `tasas_cambio` (que también proviene del BCV).
+ */
+export async function fetchTasaBcv(): Promise<{ tasa: number | null; fuente: FuenteTasa }> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/fetch-bcv`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        apikey: SUPABASE_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
+    })
+    if (res.ok) {
+      const data = (await res.json()) as { ok?: boolean; tasa_bcv?: number }
+      const t = Number(data.tasa_bcv)
+      if (data.ok && t > 0) {
+        invalidar('tasa')
+        return { tasa: t, fuente: 'bcv-directo' }
+      }
+    }
+  } catch {
+    // Edge Function no desplegada o sin conexión: se cae a la tasa almacenada.
+  }
+  const t = await fetchTasaDelDia()
+  return t != null ? { tasa: t, fuente: 'sistema' } : { tasa: null, fuente: 'ninguna' }
 }
 
 // --------------------------------------------------------------- Pagos

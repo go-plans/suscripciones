@@ -3,6 +3,7 @@ import {
   fetchClientes,
   fetchPagos,
   fetchSuscripciones,
+  fetchTasaBcv,
   fetchTasaDelDia,
   registrarPago,
 } from '../lib/api'
@@ -49,15 +50,6 @@ const estadoInicial = {
 }
 
 type FormState = typeof estadoInicial
-
-// Lee la tasa oficial del día desde dolarapi (fuente pública con CORS habilitado)
-async function leerTasaDolarApi(): Promise<number | null> {
-  const res = await fetch('https://dolarapi.com/v1/dolares/oficial')
-  if (!res.ok) throw new Error('dolarapi no respondió')
-  const data = (await res.json()) as { venta?: number; promedio?: number; compra?: number }
-  const v = Number(data.venta ?? data.promedio ?? data.compra)
-  return v > 0 ? v : null
-}
 
 export default function Pagos() {
   const [clientes, setClientes] = useState<Usuario[]>([])
@@ -156,28 +148,24 @@ export default function Pagos() {
 
   const reflejarTasa = async () => {
     setReflejando(true)
+    setError('')
     setExito('')
     try {
-      const v = await leerTasaDolarApi()
-      if (v) {
-        setForm((f) => ({ ...f, tasa: String(v) }))
-        setExito(`Tasa BCV reflejada: ${fmtNum(v, 4)} VES/USD (fuente: dolarapi)`)
+      const r = await fetchTasaBcv()
+      if (r.tasa != null) {
+        setForm((f) => ({ ...f, tasa: String(r.tasa) }))
+        setExito(
+          r.fuente === 'bcv-directo'
+            ? `Tasa BCV oficial reflejada: ${fmtNum(r.tasa, 4)} VES/USD (fuente: bcv.org.ve)`
+            : `Tasa reflejada: ${fmtNum(r.tasa, 4)} VES/USD (última del sistema, origen BCV)`,
+        )
       } else {
-        throw new Error('valor inválido')
+        setError(
+          'No se pudo obtener la tasa del BCV. Verifica la conexión o ejecuta la Edge Function fetch-bcv.',
+        )
       }
-    } catch {
-      // Fallback: última tasa guardada en el sistema
-      try {
-        const t = await fetchTasaDelDia()
-        if (t) {
-          setForm((f) => ({ ...f, tasa: String(t) }))
-          setExito(`Sin acceso a dolarapi: se usó la última tasa del sistema (${fmtNum(t, 4)})`)
-        } else {
-          setError('No se pudo obtener la tasa. Verifica tu conexión.')
-        }
-      } catch {
-        setError('No se pudo obtener la tasa. Verifica tu conexión.')
-      }
+    } catch (e) {
+      setError(errMsg(e))
     } finally {
       setReflejando(false)
     }
@@ -320,7 +308,8 @@ export default function Pagos() {
                   {reflejando ? 'Reflejando…' : 'Reflejar tasa'}
                 </Button>
                 <span className="text-xs text-slate-400">
-                  Trae la tasa oficial del día (dolarapi).
+                  Trae la tasa oficial del día desde el sitio del BCV (bcv.org.ve) vía
+                  la Edge Function `fetch-bcv`; si no está desplegada, usa la última guardada.
                 </span>
               </div>
             ) : form.moneda === 'USDT' ? (

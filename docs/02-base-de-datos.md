@@ -80,7 +80,7 @@ date            -- fechas de corte (fecha_inicio, fecha_corte_*)
 
 ## 7. Seed (datos de ejemplo)
 
-`0003_seed.sql` inserta plataformas (Netflix, Spotify, Disney+, Canva, ChatGPT), plan mensual de ejemplo para cada una y la tasa BCV del día (usuario debe reemplazarla o ejecutar la Edge Function).
+`0003_seed.sql` inserta plataformas (Netflix, Spotify, Disney+, Canva, ChatGPT), plan mensual de ejemplo para cada una y la tasa BCV del día (usuario debe reemplazarla o reflejarla con la Edge Function `fetch-bcv`, que la extrae de bcv.org.ve).
 
 ## 8. Índices
 

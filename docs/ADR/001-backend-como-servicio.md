@@ -30,7 +30,7 @@ Se adopta **Supabase**. La lógica de negocio crítica (comisiones y cupos) se i
 
 **Negativas / costes**:
 - La conexión directa a la base requiere IPv6; en redes sin IPv6 se debe usar el pooler (`aws-0-us-west-2.pooler.supabase.com`).
-- La Edge Function depende del servicio `dolarapi.com` (fuente de la tasa BCV).
+- La Edge Function scrapea el sitio oficial del BCV (bcv.org.ve) para obtener la tasa de cambio de referencia (bloque USD).
 - Vendor lock-in moderado de Supabase; las migraciones SQL son portables a otra instancia de PostgreSQL con ajustes menores (schema `cron`, `auth.uid()`).
 
 ## Alternativas futuras
