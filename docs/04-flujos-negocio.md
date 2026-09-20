@@ -64,3 +64,16 @@ vencida ──(nuevo pago)──────────────────
 ```
 
 El job `vencimientos-diarios` (00:00) marca como `vencida` toda suscripción activa con `fecha_corte_cliente < current_date`.
+
+## 8. Tienda pública (catálogo por plataforma, v0.3.2)
+
+1. La portada de la tienda (`/#/tienda`) muestra **una tarjeta por plataforma** con el icono de su marca (Google G, Canva C, círculo de Spotify) y la estética de cada una: Google blanca, Canva morada, Spotify verde.
+2. Al pulsar una tarjeta se abre **la página de la plataforma** (`/#/tienda/:slug`) con sus planes y el diseño completo de la marca ("Contratar" apunta al registro/ingreso del cliente).
+3. Los slugs son estables: `google`, `canva`, `spotify` (cualquier plataforma extra usa un slug normalizado de su nombre).
+4. Los precios mostrados ("Desde $") salen del mínimo de `planes.precio_venta_usd` del catálogo público y el equivalente en BS se calcula con la tasa BCV del día.
+
+## 9. Referidos y agencia (resumen)
+
+1. Cada venta sobre una plataforma con `aplica_comision=true` y cliente con `referido_por` genera **comisión del 30%** automáticamente.
+2. La comisión queda `pendiente` hasta que el admin la `liquida`.
+3. El agente (rol 'agente') consulta **solo sus comisiones** en el panel.

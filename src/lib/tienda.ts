@@ -105,6 +105,34 @@ export function varianteHorizontal(nombre: string): VarianteHorizontal {
   return 'generica'
 }
 
+// Slug único por plataforma → usada en las rutas de detalle (#/tienda/:slug)
+export function slugPlataforma(nombre: string): string {
+  if (esGoogle(nombre)) return 'google'
+  if (esCanva(nombre)) return 'canva'
+  if (esSpotify(nombre)) return 'spotify'
+  return nombre
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+export function plataformaPorSlug(
+  lista: PlataformaTienda[],
+  slug: string,
+): PlataformaTienda | undefined {
+  return lista.find((p) => slugPlataforma(p.nombre) === slug)
+}
+
+// Lema corto de la plataforma para las tarjetas del catálogo (#/tienda)
+export function taglinePlataforma(nombre: string): string {
+  if (esGoogle(nombre)) return 'Almacenamiento, correo y fotos sin límites'
+  if (esCanva(nombre)) return 'Todo el poder de Canva a tu alcance'
+  if (esSpotify(nombre)) return 'Escucha tu música favorita sin límites'
+  return `Planes flexibles y seguros de ${nombre}`
+}
+
 // Precio compacto para la tienda: "2.99$" (sin espacio, $ al final, punto decimal)
 export const precioUsd = (n: number): string => {
   const s = new Intl.NumberFormat('en-US', {

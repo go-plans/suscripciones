@@ -2,6 +2,17 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-20 — Tienda tipo catálogo con páginas por plataforma
+
+### v0.3.2
+
+- **feat** **La tienda ahora es un catálogo de productos**: la portada (`/#/tienda`) muestra una tarjeta por plataforma con el **icono de la marca** (G multicolor de Google, logomarca de Canva, círculo de Spotify) y la estética de cada una — Google blanco, Canva morado, Spotify verde — con lema, "Desde $" y botón "Ver planes".
+- **feat** **Página de detalle por plataforma** (`/#/tienda/google`, `/#/tienda/canva`, `/#/tienda/spotify`): al pulsar una tarjeta se abre la página con los planes de esa plataforma y el diseño completo de la marca (el hero de Google One, las filas de Canva Pro y Spotify Premium) más un botón "← Tienda" para volver al catálogo.
+- **refactor** Cabecera de la tienda extraída a un componente reutilizable `BarraTienda` (con la opción "volver") compartido entre el catálogo y las páginas de detalle.
+- **feat** Helpers nuevos en `lib/tienda.ts`: `slugPlataforma` (rutas estables `google`/`canva`/`spotify`), `plataformaPorSlug` (resolución de la ruta) y `taglinePlataforma` (lema corto por marca).
+- **feat** Componente de iconos de marca `IconosMarca.tsx` (Google G oficial multicolor, Spotify, C de Canva).
+- Las plataformas del catálogo se ordenan siempre Google → Canva → Spotify (y las demás al final).
+
 ## 2026-09-20 — Pagos avanzados + Rediseño visual de la tienda
 
 ### v0.3.1

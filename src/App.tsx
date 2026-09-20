@@ -7,6 +7,7 @@ import { IconLock } from './components/icons'
 // Carga perezosa: cada página se compila al visitarse (app inicial más rápida)
 const Login = lazy(() => import('./pages/Login'))
 const Tienda = lazy(() => import('./pages/Tienda'))
+const TiendaPlataforma = lazy(() => import('./pages/TiendaPlataforma'))
 const Registro = lazy(() => import('./pages/Registro'))
 const Ingreso = lazy(() => import('./pages/Ingreso'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -48,6 +49,7 @@ export default function App() {
           <Routes>
             {/* Rutas públicas del sitio de venta */}
             <Route path="/tienda" element={<Tienda />} />
+            <Route path="/tienda/:slug" element={<TiendaPlataforma />} />
             <Route path="/registro" element={<Registro />} />
             <Route path="/ingreso" element={<Ingreso />} />
             <Route path="/login" element={<Login />} />
