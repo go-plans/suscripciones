@@ -11,8 +11,8 @@ Relaciones principales: un **cliente** (`usuarios.rol='cliente'`) puede tener mu
 
 | Tabla | Descripción | Claves |
 |---|---|---|
-| `plataformas` | Servicios base (Netflix, Canva…) | `nombre` unique, `activa` |
-| `planes` | Precio de venta anclado en USD | FK `plataforma_id`; unique `(plataforma_id, duracion_dias)` |
+| `plataformas` | Servicios base (Netflix, Canva…) | `nombre` unique, `activa`, `aplica_comision` |
+| `planes` | Precio de venta anclado en USD; `precio_referencia_usd` opcional para el **precio tachado** del catálogo público | FK `plataforma_id`; unique `(plataforma_id, duracion_dias)` |
 | `proveedores` | Quién te vende las cuentas | `nombre`, `contacto`, `metodo_pago_preferido` |
 | `cuentas_madre` | Cuentas base = inventario | FK `proveedor_id`, `plataforma_id`; `cupos_totales`, `cupos_ocupados`, `costo_renovacion_usd`, `fecha_corte_proveedor`, `estado` |
 
@@ -50,6 +50,7 @@ date            -- fechas de corte (fecha_inicio, fecha_corte_*)
 |---|---|---|
 | `trg_comision_referido` | `AFTER INSERT` en `pago_suscripciones` | Si el cliente de la suscripción tiene `referido_por`, inserta en `comisiones` el **30%** de `monto_asignado_usd` con estado `pendiente` |
 | `trg_cupos_after_insert` / `_update` / `_delete` | en `suscripciones` | Mantiene `cuentas_madre.cupos_ocupados` y **rechaza** asignaciones que superen `cupos_totales` |
+| `auto_crear_usuario_cliente` | `AFTER INSERT` en `auth.users` | **Registro público**: crea la fila en `usuarios` con `rol='cliente'` tomando nombre/teléfono de `raw_user_meta_data` del usuario recién registrado. Así el cliente nunca puede escribirse a sí mismo (el trigger lo hace la BD). Puede desactivarse en el SQL Editor si se quiere el alta manual |
 
 ## 4. Row Level Security (RLS)
 
@@ -57,6 +58,7 @@ date            -- fechas de corte (fecha_inicio, fecha_corte_*)
 |---|---|
 | **admin** (usuarios.rol='admin' y id = auth.uid()) | Acceso total (SELECT/INSERT/UPDATE/DELETE) en las 11 tablas de gestión |
 | **agente** | SELECT solo sobre sus propias `comisiones` (`agente_id = auth.uid()`) |
+| **cliente** (autenticado, rol='cliente') | SELECT/UPDATE solo sobre su propia fila en `usuarios` (políticas `cliente_ve_su_fila` / `cliente_edita_su_fila`) |
 | **anon** | SELECT sobre `plataformas` y `planes` (únicamente para el catálogo público de venta) |
 
 ```sql
@@ -68,7 +70,7 @@ date            -- fechas de corte (fecha_inicio, fecha_corte_*)
 
 | Vista | Propósito |
 |---|---|
-| `v_catalogo_publico` | Fase 3: catálogo de venta (plataforma, logo, duración, precio) |
+| `v_catalogo_publico` | Catálogo de venta público: plataforma, logo, duración en días, precio de venta y precio de referencia (tachado). `security_invoker` + solo columnas públicas (sin inventario, proveedores ni costos) |
 | `v_vencimientos_proveedores` | Alerta del dashboard: cortes de cuenta madre en los próximos 3 días (`dias_restantes`) |
 
 ## 6. Automatizaciones (pg_cron)
@@ -81,6 +83,8 @@ date            -- fechas de corte (fecha_inicio, fecha_corte_*)
 ## 7. Seed (datos de ejemplo)
 
 `0003_seed.sql` inserta plataformas (Netflix, Spotify, Disney+, Canva, ChatGPT), plan mensual de ejemplo para cada una y la tasa BCV del día (usuario debe reemplazarla o reflejarla con la Edge Function `fetch-bcv`, que la extrae de bcv.org.ve).
+
+**Fase 3** (migraciones aplicadas a la BD real, no solo seed): `0007_tienda.sql` crea la infraestructura del catálogo de venta + el seed de **Google One** (`aplica_comision`); `0008_catalogo_venta.sql` fija los precios reales de venta de **Google One** (2,99 con ref. 5,99 / 8,99 / 11,99 US$), **Canva Pro** (8,00 / 39,99 / 69,99 US$) y **Spotify Premium** (3,49 / 16,99 / 28,99 US$), y **desactiva** el plan duplicado "Google One 5 TB" (solo tenía 365 días a 11,99 US$) sin borrarlo.
 
 ## 8. Índices
 

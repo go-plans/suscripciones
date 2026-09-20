@@ -2,6 +2,7 @@ import { supabase, SUPABASE_KEY, SUPABASE_URL } from './supabase'
 import { hoy, round2 } from './format'
 import { errMsg } from './err'
 import type {
+  CatalogoItem,
   ComisionRow,
   CuentaMadre,
   CuentaMadreRow,
@@ -197,6 +198,20 @@ export async function eliminarPlataforma(id: string): Promise<void> {
   const { error } = await supabase.from('plataformas').delete().eq('id', id)
   if (error) throw new Error(errMsg(error))
   invalidar('plataformas', 'plataformas_todas', 'planes', 'susc', 'cuentas', 'vencimientos', 'resumen')
+}
+
+// --------------------------------------------------------------- Tienda pública
+// Vista `v_catalogo_publico`: legible con la anon key (RLS → solo
+// plataformas activas). La tienda vive en las rutas /tienda, /registro
+// e /ingreso, fuera del panel administrativo.
+export async function fetchCatalogoPublico(): Promise<CatalogoItem[]> {
+  const { data, error } = await supabase
+    .from('v_catalogo_publico')
+    .select('*')
+    .order('plataforma')
+    .order('duracion_dias')
+  if (error) throw new Error(errMsg(error))
+  return (data ?? []) as CatalogoItem[]
 }
 
 export async function fetchPlanes(): Promise<PlanRow[]> {

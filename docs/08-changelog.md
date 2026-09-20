@@ -2,6 +2,23 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-20 — Fase 3 · Tienda pública y registro de clientes
+
+### v0.3.0
+
+- **feat** Tienda pública de venta en `/#/tienda` (misma URL del proyecto), con el catálogo real desde `v_catalogo_publico` y tres diseños según la plataforma:
+  - **Google One** (tarjetas verticales, estilo Google/Spotify/Canva): hero "5 TB de almacenamiento", comparativa *Antes → Después* (correo lleno vs. 0% en uso) y precios con **referencia tachada** + ahorro (50% / 67%).
+  - **Canva Pro** (filas horizontales moradas) y **Spotify Premium** (filas horizontales verdes): una fila por duración (1 mes / 6 meses / 1 año) con precio mensual equivalente y el ahorro real calculado contra el precio mensual.
+  - Footer con descargo: los precios van en USD; el equivalente en bolívares se calcula con la tasa oficial del **BCV** al momento del pago.
+- **feat** Registro de clientes en `/#/registro` con **nombre, correo, teléfono (opcional) y contraseña** (Supabase Auth `signUp` con metadatos): la BD crea la fila en `usuarios` con `rol='cliente'` vía el trigger `auto_crear_usuario_cliente`. Con la confirmación de correo **activada** (tal como está el proyecto) muestra "¡Casi listo! 🎉 — revisa tu correo"; desactivada entraría directo a la tienda.
+- **feat** Página `/#/ingreso` (entrar con correo del cliente) y enlaces "Ingresar / Registrarse" en la cabecera de la tienda.
+- **feat** Migración `0007_tienda.sql`: columna `planes.precio_referencia_usd` (precio tachado), vista `v_catalogo_publico` ampliada (logo, duración, precio de venta y referencia; **sin** datos sensibles de inventario/RLS), trigger de registro y políticas RLS del cliente (`cliente_ve_su_fila` / `cliente_edita_su_fila`), más el seed de **Google One** con `aplica_comision`.
+- **feat** Migración `0008_catalogo_venta.sql`: precios reales de venta en la BD — **Google One** 2,99 (ref. 5,99)/8,99/11,99 US$ · **Canva Pro** 8,00/39,99/69,99 US$ · **Spotify Premium** 3,49/16,99/28,99 US$. Se **desactiva** "Google One 5 TB" (plan duplicado que solo tenía 365 días) sin borrarlo.
+- **security** El bundle **no** contiene la `service_role`: el registro usa solo la anon key + Supabase Auth, y la fila en `usuarios` la crea la BD (trigger), nunca el cliente.
+- **refactor** `src/lib/auth.tsx` expone `rol` / `rolCargando` / `perfil`; el guard `Protegida` redirige a `/#/tienda` a todo usuario autenticado que no sea `admin`. El panel admin (Dashboard, Clientes, Suscripciones, Pagos, etc.) queda inalterado y verificado tras el refactor.
+- **chore** Lazy loading de Tienda/Registro/Ingreso (chunks propios) y helpers de catálogo en `src/lib/tienda.ts` (`agruparCatalogo`, cálculo de ahorro, formatos es-VE).
+- **docs** `02-base-de-datos` (trigger, políticas RLS, vistas y migraciones 0007/0008), `07-despliegue` (rutas públicas y verificación del sitio) y esta entrada.
+
 ## 2026-09-20 — Fase 2.6 · Horario del cron de la tasa BCV
 
 ### v0.2.6
@@ -137,5 +154,4 @@
 ## Próximos
 
 - **security** Rotación de claves expuestas en el chat (la `service_role` ya no viaja en el bundle, pero conviene emitir una nueva y descartar la actual).
-- **Fase 3** Catálogo público de venta con la vista `v_catalogo_publico`.
 - **feat** Deploy de la Edge Function `fetch-bcv` y activación del cron `tasas-bcv-diaria`.

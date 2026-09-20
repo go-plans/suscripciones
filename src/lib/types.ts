@@ -32,6 +32,15 @@ export interface PlanRow extends Plan {
   plataformas?: { nombre?: string } | null
 }
 
+// Fila de la vista pública v_catalogo_publico (venta en la tienda)
+export interface CatalogoItem {
+  plataforma: string
+  logo_url: string | null
+  duracion_dias: number
+  precio_venta_usd: number
+  precio_referencia_usd: number | null
+}
+
 export interface Proveedor {
   id: string
   nombre: string

@@ -32,11 +32,15 @@ git -C .ghpages push origin gh-pages --force
 git worktree remove .ghpages
 ```
 
-- URL del sitio: `https://go-plans.github.io/suscripciones/` (login en `/#/login`;
-  credenciales del admin en `API KEYS.txt`, fuera del repo).
+- URL del sitio: `https://go-plans.github.io/suscripciones/`
+- Rutas públicas (mismo SPA): tienda `/#/tienda`, registro `/#/registro`, entrada `/#/ingreso`.
+  Login del panel admin: `/#/login` (credenciales en `API KEYS.txt`, fuera del repo).
 - Verificación rápida del sitio: el título del HTML servido debe ser
   «Suscripciones · Panel administrativo» y el bundle **no** debe contener
   `service_role` (solo anon key).
+- Verificación de la tienda: en vivo debe verse el catálogo con los tres diseños
+  (Google One vertical, Canva Pro morado, Spotify Premium verde) con precio tachado
+  y ahorros; el botón "Contratar" de cualquier plan lleva a `/#/registro`.
 
 Variables de entorno del host (nunca commitear):
 
@@ -105,6 +109,10 @@ curl https://xbmewcmpfnligeodggop.supabase.co/auth/v1/health
 # 2) API REST (catálogo público)
 curl -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
   "https://xbmewcmpfnligeodggop.supabase.co/rest/v1/plataformas?select=nombre&order=nombre"
+
+# 2b) Vista del catálogo de venta (la usa la tienda /#/tienda)
+curl -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+  "https://xbmewcmpfnligeodggop.supabase.co/rest/v1/v_catalogo_publico?select=plataforma,duracion_dias,precio_venta_usd,precio_referencia_usd&order=plataforma"
 
 # 3) Cron
 curl http://localhost:5173   # frontend arriba
