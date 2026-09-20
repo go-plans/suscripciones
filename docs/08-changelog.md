@@ -2,6 +2,15 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-20 — Logos oficiales de Canva y Spotify
+
+### v0.3.4
+
+- **feat** **Logotipos oficiales vectoriales**:
+  - **Spotify**: Se reemplazó el icono aproximado y el símbolo `♫` por el isotipo oficial vectorial de Spotify (círculo con las tres ondas de curvatura oficial de la marca) tanto en las tarjetas del catálogo (`Tienda.tsx`) como en la cabecera de la página de la plataforma (`TarjetasHorizontales.tsx`).
+  - **Canva**: Se integró el isotipo oficial (la "C" caligráfica distintiva de Canva) en la tarjeta de la tienda y el **wordmark oficial completo de Canva** en vector en el encabezado de `TarjetasHorizontales.tsx` y en la tarjeta de `Tienda.tsx`, acompañado del badge estilizado `PRO`.
+- **refactor** Exportación de `WordmarkCanva` en `src/components/tienda/IconosMarca.tsx` y parametrización de fill/color en `IconoSpotify` e `IconoCanvaC`.
+
 ## 2026-09-20 — Registro sin verificación de correo
 
 ### v0.3.3

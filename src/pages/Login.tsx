@@ -42,7 +42,7 @@ export default function Login() {
             <IconLock className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Suscripciones</h1>
+            <h1 className="text-xl font-bold text-slate-900">Go Plans</h1>
             <p className="text-sm text-slate-500">Panel administrativo</p>
           </div>
         </div>

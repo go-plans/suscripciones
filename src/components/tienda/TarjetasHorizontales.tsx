@@ -1,5 +1,6 @@
 import type { PlataformaTienda, PlanTienda, VarianteHorizontal } from '../../lib/tienda'
 import { precioUsd } from '../../lib/tienda'
+import { IconoSpotify, WordmarkCanva } from './IconosMarca'
 
 interface Tema {
   seccion: string
@@ -62,24 +63,27 @@ const temas: Record<VarianteHorizontal, Tema> = {
 }
 
 function LogoCanva({ nombre }: { nombre: string }) {
+  const sufijo = nombre.split(' ').slice(1).join(' ') || 'PRO'
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-5xl font-bold italic text-white" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
-        {nombre.split(' ')[0]}
-      </span>
-      <span className="text-xl font-black uppercase tracking-widest text-white/90">
-        {nombre.split(' ').slice(1).join(' ') || 'PRO'}
-      </span>
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex items-center justify-center gap-3">
+        <WordmarkCanva className="h-12 w-auto text-white drop-shadow-sm" fill="#FFFFFF" />
+        <span className="rounded-lg bg-[#00C4CC] px-2.5 py-1 text-sm font-black uppercase tracking-wider text-black shadow">
+          {sufijo}
+        </span>
+      </div>
     </div>
   )
 }
 
 function LogoSpotify() {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-5xl text-white">♫</span>
-      <span className="text-3xl font-bold text-white" style={{ fontFamily: 'var(--font-store)' }}>
-        Spotify <span className="font-normal">Premium</span>
+    <div className="flex items-center justify-center gap-3">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0F0F0F] text-[#1ED760] shadow-md">
+        <IconoSpotify className="h-8 w-8 text-[#1ED760]" fill="#1ED760" />
+      </span>
+      <span className="text-3xl font-extrabold tracking-tight text-white" style={{ fontFamily: 'var(--font-store)' }}>
+        Spotify <span className="font-medium text-white/90">Premium</span>
       </span>
     </div>
   )

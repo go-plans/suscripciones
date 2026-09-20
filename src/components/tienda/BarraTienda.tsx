@@ -27,10 +27,8 @@ export default function BarraTienda({ volver = false }: { volver?: boolean }) {
             </Link>
           ) : null}
           <Link to="/tienda" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-black text-white">
-              S
-            </span>
-            <span className="text-lg font-bold text-slate-900">Suscripciones</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-black text-white" style={{ fontFamily: 'var(--font-display), "Google Sans", system-ui' }}>GP</span>
+            <span className="text-lg font-bold text-slate-900" style={{ fontFamily: 'var(--font-display), "Google Sans", system-ui' }}>Go Plans</span>
           </Link>
         </div>
         <nav className="flex items-center gap-2 text-sm">

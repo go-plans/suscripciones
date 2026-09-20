@@ -14,7 +14,7 @@ import {
 import { errMsg } from '../lib/err'
 import { ErrorMsg } from '../components/ui'
 import BarraTienda from '../components/tienda/BarraTienda'
-import { IconoGoogleG, IconoSpotify, IconoCanvaC } from '../components/tienda/IconosMarca'
+import { IconoGoogleG, IconoSpotify, IconoCanvaC, WordmarkCanva } from '../components/tienda/IconosMarca'
 
 const FONT_DISPLAY = 'var(--font-display), system-ui, sans-serif'
 
@@ -69,16 +69,15 @@ function TarjetaMarca({ p }: { p: PlataformaTienda }) {
           {contenido(
             <>
               <span className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white text-[#6D28D9] shadow-lg transition-transform group-hover:scale-105">
-                <IconoCanvaC className="h-12 w-12" />
+                <IconoCanvaC className="h-12 w-12 text-[#7D2AE8]" fill="#7D2AE8" />
               </span>
-              <h3
-                className="mt-5 text-3xl font-bold italic text-white"
-                style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-              >
-                Canva
-              </h3>
-              <p className="text-lg font-black uppercase tracking-widest text-white/90">Pro</p>
-              <p className="mt-1 text-sm text-white/85">
+              <div className="mt-5 flex items-center justify-center gap-2">
+                <WordmarkCanva className="h-9 w-auto text-white" fill="#FFFFFF" />
+                <span className="rounded-md bg-[#00C4CC] px-2 py-0.5 text-xs font-black uppercase tracking-wider text-black shadow">
+                  PRO
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-white/85">
                 {taglinePlataforma(p.nombre)}
               </p>
               <p className="mt-4 text-sm font-semibold text-white">
@@ -101,10 +100,13 @@ function TarjetaMarca({ p }: { p: PlataformaTienda }) {
           {contenido(
             <>
               <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[#0F0F0F] shadow-lg transition-transform group-hover:scale-105">
-                <IconoSpotify className="h-12 w-12 text-[#1DB954]" />
+                <IconoSpotify className="h-12 w-12 text-[#1ED760]" fill="#1ED760" />
               </span>
-              <h3 className="mt-5 text-2xl font-bold text-white">{p.nombre}</h3>
-              <p className="mt-1 text-sm text-white/85">{taglinePlataforma(p.nombre)}</p>
+              <div className="mt-5 text-center">
+                <h3 className="text-2xl font-bold text-white">Spotify</h3>
+                <p className="text-sm font-semibold uppercase tracking-widest text-white/90">Premium</p>
+              </div>
+              <p className="mt-2 text-sm text-white/85">{taglinePlataforma(p.nombre)}</p>
               <p className="mt-4 text-sm font-semibold text-white">
                 Desde {desde ?? '—'}
               </p>
@@ -192,7 +194,7 @@ export default function Tienda() {
           className="text-4xl font-extrabold tracking-tight text-slate-900 md:text-5xl"
           style={{ fontFamily: FONT_DISPLAY }}
         >
-          Tienda de suscripciones
+          Tienda
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base text-slate-500 md:text-lg">
           Elige tu plataforma favorita y contrata el plan que más te convenga. Pagas en
@@ -234,7 +236,7 @@ export default function Tienda() {
           Los precios se expresan en dólares estadounidenses (USD). El equivalente en bolívares
           (VES) se calcula con la <strong>tasa de cambio oficial del BCV</strong> al momento de
           cada pago. Al contratar aceptas ser parte de un plan familiar compartido gestionado por{' '}
-          <strong>Suscripciones</strong>.
+          <strong>Go Plans</strong>.
         </p>
       </footer>
     </div>

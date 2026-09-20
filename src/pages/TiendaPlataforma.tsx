@@ -72,7 +72,7 @@ export default function TiendaPlataforma() {
           Los precios se expresan en dólares estadounidenses (USD). El equivalente en bolívares
           (VES) se calcula con la <strong>tasa de cambio oficial del BCV</strong> al momento de
           cada pago. Al contratar aceptas ser parte de un plan familiar compartido gestionado por{' '}
-          <strong>Suscripciones</strong>.
+          <strong>Go Plans</strong>.
         </p>
       </footer>
     </div>
