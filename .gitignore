@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Ramas de trabajo local (p. ej. .ghpages en el worktree de depliegue)
+.ghpages/
+
 # Secretos (NUNCA subir)
 .env
 .env.*

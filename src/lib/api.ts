@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { round2 } from './format'
+import { hoy, round2 } from './format'
 import type {
   ComisionRow,
   CuentaMadre,
@@ -381,7 +381,7 @@ export async function registrarPago(input: {
       tasa_cambio_binance: input.tasa_cambio_binance,
       equivalente_usd: input.equivalente_usd,
       metodo_pago: input.metodo_pago || null,
-      fecha_pago: new Date().toISOString().slice(0, 10),
+      fecha_pago: hoy(),
     })
     .select('id')
     .single()
@@ -453,7 +453,7 @@ export async function fetchResumen(): Promise<{
       supabase
         .from('pagos_ingresos')
         .select('equivalente_usd')
-        .gte('fecha_pago', new Date().toISOString().slice(0, 8) + '01'),
+        .gte('fecha_pago', hoy().slice(0, 7) + '-01'),
     ])
 
     const sum = (rows: Array<{ equivalente_usd: number }>) =>

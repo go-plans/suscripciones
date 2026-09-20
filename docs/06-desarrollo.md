@@ -14,8 +14,10 @@ cd app
 npm install
 
 # 2) Variables de entorno (app/.env — se crea a partir de API KEYS.txt)
-#    VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_SERVICE_ROLE_KEY
+#    VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 #    ⚠️ .env debe vivir en app/ (Vite solo carga .env desde la carpeta del proyecto).
+#    ⚠️ No poner VITE_SUPABASE_SERVICE_ROLE_KEY: esa clave es SOLO para scripts
+#       locales del equipo, nunca para el bundle del navegador.
 
 # 3) Servidor de desarrollo
 npm run dev          # http://localhost:5173
@@ -80,35 +82,65 @@ supabase functions deploy fetch-bcv --no-verify-jwt
 ```
 src/
 ├── lib/
-│   ├── supabase.ts   # cliente (service_role en Fase 2 — ver nota de seguridad)
+│   ├── supabase.ts   # cliente con anon key SOLO (auth + RLS; service_role prohibida en bundle)
+│   ├── auth.tsx      # AuthProvider + useAuth (sesión Supabase Auth persistida) + login/logout
 │   ├── api.ts        # capa única de acceso a datos (listas con caché TTL 20 s + invalidación en escrituras)
 │   ├── types.ts      # tipos que reflejan el esquema de la DB
-│   └── format.ts     # formatos es-VE: VES/USD/USDT (punto-miles, coma-decimales), fechas
+│   └── format.ts     # formatos es-VE: VES/USD/USDT (punto-miles, coma-decimales), fechas locales
 ├── components/
 │   ├── icons.tsx     # iconos vectoriales tipo Lucide (sin emojis)
 │   ├── inline.tsx    # registro inline: NuevoCliente, NuevoPlan, NuevaCuenta, NuevoProveedor, NuevaPlataforma
 │   ├── ui.tsx        # primitivas (Button, Input, Select, Table con cabecera fija, Badge, Modal, StatCard…)
-│   └── Layout.tsx    # sidebar (iconos vectoriales) + <Outlet/>
+│   └── Layout.tsx    # sidebar (iconos vectoriales) + email de sesión + botón "Cerrar sesión" + <Outlet/>
 └── pages/            # carga perezosa: React.lazy + Suspense (un chunk por página)
-    ├── Dashboard.tsx        # KPIs + alertas v_vencimientos_proveedores (≤3 días)
-    ├── Clientes.tsx         # CRUD clientes (+ referido por agente) + buscador
-    ├── Suscripciones.tsx    # alta con registro inline + fecha de inicio/estado (históricas)
-    ├── Plataformas.tsx      # CRUD plataformas + toggle comisión 30%
-    ├── CuentasMadre.tsx     # inventario (proveedor/corte opcionales) + inline + buscador
-    ├── Proveedores.tsx      # CRUD simple
-    ├── Pagos.tsx            # calculadora BCV (+ botón "Reflejar tasa" dolarapi), tasa Binance USDT, distribución
-    └── Comisiones.tsx       # lista 30% + liquidación + filtro por estado
+    ├── Login.tsx             # autenticación (email + contraseña Supabase Auth)
+    ├── Dashboard.tsx         # KPIs + alertas v_vencimientos_proveedores (≤3 días)
+    ├── Clientes.tsx          # CRUD clientes (+ referido por agente) + buscador
+    ├── Suscripciones.tsx     # alta con registro inline + fecha de inicio/estado (históricas)
+    ├── Plataformas.tsx       # CRUD plataformas + toggle comisión 30%
+    ├── CuentasMadre.tsx      # inventario (proveedor/corte opcionales) + inline + buscador
+    ├── Proveedores.tsx       # CRUD simple
+    ├── Pagos.tsx             # calculadora BCV (+ botón "Reflejar tasa" dolarapi), tasa Binance USDT, distribución
+    └── Comisiones.tsx        # lista 30% + liquidación + filtro por estado
 ```
 
-### Nota de seguridad (IMPORTANTE)
+### Nota de seguridad (FASE 2.2 — DESPLIEGUE)
 
-El panel admin opera con `VITE_SUPABASE_SERVICE_ROLE_KEY`: una clave con
-privilegios totales que queda **incrustada en el bundle del navegador**.
-Esto es una decisión temporal y **solo aceptable en localhost**.
-Antes de cualquier despliegue al público se debe migrar a Supabase Auth +
-RLS (el RLS de la base ya está preparado para ello). Ver `docs/05-seguridad.md`.
+El bundle del navegador usa **solo la anon key** (publishable). El acceso al
+panel pasa por **Supabase Auth + RLS**: el login (`/#/login`) emite un JWT y la
+base solo deja actuar a `es_admin()` (`usuarios.id = auth.uid()` con
+`rol='admin'`); el guard de rutas bloquea el panel sin sesión.
+
+La `VITE_SUPABASE_SERVICE_ROLE_KEY` queda **restringida a scripts locales del
+equipo** (p. ej. `bootstrap-admin.cjs`), fuera del repo y nunca en el bundle.
+Regla estricta: si un build necesita esa variable, está mal diseñado.
 
 ## 8. Logs
 
 - Los logs de ejecución de scripts y migraciones van a `logs/` (fuera de git).
 - No documentar secretos en logs.
+
+## 9. Despliegue a GitHub Pages
+
+El sitio es 100 % estático (Vite con `base: './'` + `HashRouter`), así que
+basta con publicar el `dist/` en la rama `gh-pages`:
+
+```powershell
+cd app
+npm run build                       # compila con anon key (sin service_role)
+# 1) commitear y pushear el cambio primero
+git add -A && git commit -m "..." && git push origin main
+# 2) publicar el build en la rama gh-pages
+git worktree add --orphan -b gh-pages .ghpages
+Copy-Item dist\* .ghpages\ -Recurse -Force
+git -C .ghpages add -A
+git -C .ghpages commit -m "deploy: release v0.2.2"
+git -C .ghpages push origin gh-pages --force
+git worktree remove .ghpages
+```
+
+- URL del sitio: `https://go-plans.github.io/suscripciones/` (el login está en
+  `/#/login`; las credenciales del admin viven en `API KEYS.txt`, fuera del repo).
+- GitHub Pages en una cuenta gratuita solo sirve repos **públicos**; si el repo
+  sigue privado, el sitio no se publicará (o requerirá plan de pago).
+- El build de Pages NO lleva secretos: la anon key es publishable por diseño.

@@ -45,6 +45,13 @@ export const fmtDateTime = (iso: string): string =>
     minute: '2-digit',
   }).format(new Date(iso))
 
-export const hoy = (): string => new Date().toISOString().slice(0, 10)
+// Fecha local (no UTC): en Venezuela (UTC-4) a partir de las 20:00 la
+// fecha UTC es la del día siguiente y habría pagos mal fechados.
+export const hoy = (): string => {
+  const d = new Date()
+  const mes = String(d.getMonth() + 1).padStart(2, '0')
+  const dia = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mes}-${dia}`
+}
 
 export const round2 = (n: number): number => Math.round(n * 100) / 100

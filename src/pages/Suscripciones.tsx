@@ -73,8 +73,14 @@ export default function Suscripciones() {
     setForm((f) => actualizar(f))
   }
 
+  const planElegido = planes.find((p) => p.id === form.plan_id)
+
+  // Solo cuentas activas con cupo libre Y de la MISMA plataforma del plan
   const cuentasDisponibles = cuentas.filter(
-    (cm) => cm.estado === 'activa' && cm.cupos_ocupados < cm.cupos_totales,
+    (cm) =>
+      cm.estado === 'activa' &&
+      cm.cupos_ocupados < cm.cupos_totales &&
+      (!planElegido || cm.plataforma_id === planElegido.plataforma_id),
   )
 
   const filtradas = useMemo(() => {
@@ -206,7 +212,9 @@ export default function Suscripciones() {
           <Field label="Plan *">
             <Select
               value={form.plan_id}
-              onChange={(e) => setForm({ ...form, plan_id: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, plan_id: e.target.value, cuenta_madre_id: '' })
+              }
             >
               <option value="">Selecciona…</option>
               {planes.map((p) => (
@@ -215,7 +223,9 @@ export default function Suscripciones() {
                 </option>
               ))}
             </Select>
-            <NuevoPlan onCreated={(id) => void cargarY((f) => ({ ...f, plan_id: id }))} />
+            <NuevoPlan
+              onCreated={(id) => void cargarY((f) => ({ ...f, plan_id: id, cuenta_madre_id: '' }))}
+            />
           </Field>
           <Field label="Cuenta madre *">
             <Select
@@ -230,6 +240,13 @@ export default function Suscripciones() {
                 </option>
               ))}
             </Select>
+            {planElegido && cuentasDisponibles.length === 0 ? (
+              <p className="text-xs text-amber-600">
+                No hay cuentas activas con cupos libres de{' '}
+                {planElegido.plataformas?.nombre ?? 'esta plataforma'}. Crea una o revisa la
+                plataforma del plan.
+              </p>
+            ) : null}
             <NuevaCuenta onCreated={(id) => void cargarY((f) => ({ ...f, cuenta_madre_id: id }))} />
           </Field>
           <div className="grid grid-cols-2 gap-3">

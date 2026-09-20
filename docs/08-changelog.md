@@ -68,8 +68,20 @@
 - **feat** Tablas más organizadas: cabecera fija, scroll interno, filas alternadas/hover, buscadores en Clientes, Suscripciones y Cuentas madre; filtro por estado en Comisiones.
 - **chore** `crearCliente`, `crearPlan`, `crearCuentaMadre`, `crearProveedor`, `crearPlataforma` devuelven el `id` para seleccionarlo al vuelo tras crearlo.
 
+## 2026-09-19 — Fase 2.2 · Auditoría + despliegue seguro (GitHub Pages)
+
+### v0.2.2
+
+- **security** La `service_role` **ya no se incrusta en el bundle** del navegador. El panel ahora usa solo la **anon key** y todo el acceso pasa por **Supabase Auth + RLS** (`es_admin()` por `auth.uid()`): login en `/#/login` (`src/lib/auth.tsx`, `src/pages/Login.tsx`), sesión persistida, y guard de rutas en `App.tsx`. Usuario admin de ejemplo creado por script (`admin@go-plans.app`, credenciales en `API KEYS.txt`, fuera del repo).
+- **security** Fuga anónima cerrada: las vistas `v_vencimientos_proveedores` y `v_catalogo_publico` ahora son `security_invoker`, así el RLS de las tablas base se aplica al invocador. Verificado: un anónimo lee 0 filas de vencimientos/cuentas madre (antes las leía todas) y el catálogo público sigue funcionando.
+- **fix** Asignación cruzada plan↔cuenta madre: antes se podía poner un plan de una plataforma en una cuenta de otra (p. ej. Spotify → Netflix). Ahora el formulario de Suscripciones **solo ofrece cuentas de la misma plataforma** del plan y la BD **rechaza** cualquier cruce (`trg_validar_plataforma_susc`).
+- **fix** **Renovación por pago**: registrar un pago ahora extiende `fecha_corte_cliente` de cada suscripción por la duración del plan y la deja en `activa` (`trg_renovar_susc_por_pago`), evitando que el cron matutino marque como vencida una suscripción ya cobrada.
+- **fix** Fechas en **zona horaria local**: `hoy()` ya no usa UTC (`toISOString`), así en Venezuela (UTC‑4) un pago después de las 20:00 se registra el día correcto; aplica también a "ingresos del mes" del dashboard.
+- **chore** `vite.config.ts` con `base: './'` + `HashRouter`: el build funciona servido desde cualquier subruta (GitHub Pages `/suscripciones/`) sin configuración de servidor.
+- **infra** Despliegue inicial a **GitHub Pages** desde la rama `gh-pages` (build local con anon key, sin secretos).
+
 ## Próximos
 
+- **security** Rotación de claves expuestas en el chat (la `service_role` ya no viaja en el bundle, pero conviene emitir una nueva y descartar la actual).
 - **Fase 3** Catálogo público de venta con la vista `v_catalogo_publico`.
-- **security** Rotación de claves expuestas en el chat + migrar el panel a Supabase Auth + RLS.
-- **feat** Deploy de `fetch-bcv` y activación del cron `tasas-bcv-diaria`.
+- **feat** Deploy de la Edge Function `fetch-bcv` y activación del cron `tasas-bcv-diaria`.
