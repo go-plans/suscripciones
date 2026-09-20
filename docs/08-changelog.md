@@ -10,6 +10,17 @@
 - **feat** Botón **"Reflejar tasa"** en Pagos: llama a la Edge Function `fetch-bcv` para reflejar la tasa BCV en vivo (fuente `bcv.org.ve`); si la función aún no está desplegada, cae a la última tasa almacenada en `tasas_cambio` (que también proviene del BCV).
 - **docs** `01-arquitectura`, `02-base-de-datos`, `06-desarrollo`, `07-despliegue` y `ADR/001` actualizados: fuente `bcv.org.ve` y notas de CORS/despliegue del parser.
 
+## 2026-09-20 — Fase 2.5 · Mobile-friendly
+
+### v0.2.5
+
+- **feat** Diseño responsive para móviles/tablets:
+  - **Navegación**: en pantallas pequeñas la barra lateral se convierte en una barra superior con menú hamburguesa (drawer deslizable con overlay y cierre al navegar); en escritorio se mantiene la barra lateral fija.
+  - **Tablas**: el contenedor con scroll horizontal (ya venía con `min-w-max`) evita que las tablas rompan el ancho del viewport.
+  - **Modales**: altura máxima 90 vh con scroll vertical interno para formularios largos.
+  - **Formularios**: los grids de 2–3 columnas colapsan a 1 columna en pantallas pequeñas (Pagos, Suscripciones, Cuentas madre, planes/cuentas inline).
+  - **Login**: ya era responsivo (`max-w-sm` + `px-4`), sin cambios.
+
 ## 2026-09-19 — Lanzamiento inicial
 
 ### v0.1.0

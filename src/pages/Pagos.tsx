@@ -254,7 +254,7 @@ export default function Pagos() {
                 onCreated={(id) => void cargarY((f) => ({ ...f, cliente_id: id }))}
               />
             </Field>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <Field label="Monto *">
                 <Input
                   type="number"
@@ -302,7 +302,7 @@ export default function Pagos() {
             </div>
 
             {form.moneda === 'BS' ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button variant="secondary" onClick={() => void reflejarTasa()} disabled={reflejando}>
                   <IconRefresh className={`h-4 w-4 ${reflejando ? 'animate-spin' : ''}`} />
                   {reflejando ? 'Reflejando…' : 'Reflejar tasa'}

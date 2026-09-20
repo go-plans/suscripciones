@@ -259,7 +259,7 @@ export default function Suscripciones() {
             ) : null}
             <NuevaCuenta onCreated={(id) => void cargarY((f) => ({ ...f, cuenta_madre_id: id }))} />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Fecha de inicio *">
               <Input
                 type="date"

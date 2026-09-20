@@ -81,6 +81,14 @@ export const IconPercent = (p: P) => (
   </Svg>
 )
 
+export const IconMenu = (p: P) => (
+  <Svg {...p}>
+    <line x1="4" y1="6" x2="20" y2="6" />
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <line x1="4" y1="18" x2="20" y2="18" />
+  </Svg>
+)
+
 export const IconPlus = (p: P) => (
   <Svg {...p}>
     <path d="M12 5v14" />
