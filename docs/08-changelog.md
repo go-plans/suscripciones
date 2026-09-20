@@ -2,6 +2,13 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-20 — Fase 2.6 · Horario del cron de la tasa BCV
+
+### v0.2.6
+
+- **feat** El cron diario `tasas-bcv-diaria` ahora corre a las **18:00 hora de Venezuela** (`0 22 * * *` en BD UTC, que es la configuración por defecto de Supabase) en lugar de las 7:00, para capturar la tasa que el **BCV publica ~16:00 VET** (20:00 UTC). Antes, al correr de madrugada, almacenaba la tasa del día anterior.
+- **docs** `02-base-de-datos` y `07-despliegue` actualizados con la equivalencia de zonas horarias y el paso `show timezone;` (si la BD estuviera en `America/Caracas`, usar `0 18 * * *`).
+
 ## 2026-09-20 — Fase 2.4 · Tasa oficial del BCV
 
 ### v0.2.4

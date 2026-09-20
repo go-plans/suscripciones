@@ -76,7 +76,7 @@ date            -- fechas de corte (fecha_inicio, fecha_corte_*)
 | Job | Horario | Acción |
 |---|---|---|
 | `vencimientos-diarios` | `0 0 * * *` | Marca `suscripciones` como `vencida` si `fecha_corte_cliente < current_date` |
-| `tasas-bcv-diaria` *(en 0002 como template)* | `0 7 * * *` | Invoca Edge Function `fetch-bcv` vía `net.http_post` |
+| `tasas-bcv-diaria` *(en 0002 como template)* | `0 22 * * *` | Invoca Edge Function `fetch-bcv` vía `net.http_post`; captura la tasa publicada por el BCV a las 16:00 VET (**22:00 UTC = 18:00 VET**) |
 
 ## 7. Seed (datos de ejemplo)
 

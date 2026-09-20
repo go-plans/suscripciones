@@ -45,9 +45,14 @@ select cm.id,
 --      SUPABASE_ANON_KEY=sb_publishable_...
 --
 --    Ejecutar una vez (después de desplegar la función fetch-bcv):
+--    IMPORTANTE (zona horaria): pg_cron interpreta la hora en la zona de la BD
+--    (Supabase usa UTC por defecto). Venezuela = UTC-4. El BCV publica la tasa
+--    ~16:00 VET = 20:00 UTC. Este cron corre 2h después (22:00 UTC = 18:00 VET)
+--    para capturar la tasa ya publicada del día. Si la BD estuviera en
+--    America/Caracas, usar '0 18 * * *'.
 --    select cron.schedule(
 --      'tasas-bcv-diaria',
---      '0 7 * * *',
+--      '0 22 * * *',
 --      $$ select net.http_post(
 --             url    := 'https://xbmewcmpfnligeodggop.supabase.co/functions/v1/fetch-bcv',
 --             headers := jsonb_build_object(

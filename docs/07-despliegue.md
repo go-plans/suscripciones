@@ -72,12 +72,19 @@ curl -X POST https://xbmewcmpfnligeodggop.supabase.co/functions/v1/fetch-bcv \
 
 ## 4. Activar el cron de tasa BCV
 
-Una vez desplegada la función, ejecutar una sola vez:
+> **Horario:** el BCV publica la tasa de referencia ~16:00 hora de Venezuela (UTC‑4).
+> El cron se ejecuta a las **18:00 VET = 22:00 UTC** para capturar la tasa ya
+> publicada. `pg_cron` usa la zona horaria de la BD (Supabase: UTC por defecto);
+> si tu BD estuviera en `America/Caracas`, usa `'0 18 * * *'` en su lugar.
+
+Una vez desplegada la función, ejecutar una sola vez en el SQL Editor:
 
 ```sql
+show timezone; -- debe decir UTC (si no, ajusta la hora según la nota)
+
 select cron.schedule(
   'tasas-bcv-diaria',
-  '0 7 * * *',
+  '0 22 * * *',
   $$ select net.http_post(
        url := 'https://xbmewcmpfnligeodggop.supabase.co/functions/v1/fetch-bcv',
        headers := jsonb_build_object(
