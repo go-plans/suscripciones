@@ -8,20 +8,25 @@ import {
 } from '../lib/api'
 import type { CuentaMadreRow, Plataforma, Proveedor } from '../lib/types'
 import { fmtDate, fmtUSD } from '../lib/format'
+import { errMsg } from '../lib/err'
 import {
   Badge,
   Button,
+  Buscador,
+  EmptyState,
   ErrorMsg,
   Field,
   Input,
   Loading,
   Modal,
+  ModalFooter,
+  PageHeader,
   Select,
   Table,
   Td,
 } from '../components/ui'
 import { NuevaPlataforma, NuevoProveedor } from '../components/inline'
-import { IconInfinity, IconSearch } from '../components/icons'
+import { IconInfinity } from '../components/icons'
 
 const vacio = {
   proveedor_id: '',
@@ -39,8 +44,10 @@ export default function CuentasMadre() {
   const [plataformas, setPlataformas] = useState<Plataforma[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [busqueda, setBusqueda] = useState('')
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(false)
+  const [guardando, setGuardando] = useState(false)
   const [form, setForm] = useState<FormState>(vacio)
 
   const cargar = useCallback(async () => {
@@ -55,7 +62,9 @@ export default function CuentasMadre() {
       setProveedores(pr)
       setError('')
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setCargando(false)
     }
   }, [])
 
@@ -79,6 +88,8 @@ export default function CuentasMadre() {
   }, [cuentas, busqueda])
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       await crearCuentaMadre({
         proveedor_id: form.proveedor_id || null,
@@ -92,7 +103,9 @@ export default function CuentasMadre() {
       setForm(vacio)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -102,36 +115,30 @@ export default function CuentasMadre() {
       await cambiarEstadoCuenta(c.id, nuevo)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
     }
   }
 
+  if (cargando) return <Loading />
   if (error) return <ErrorMsg message={error} />
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Cuentas madre</h1>
-          <p className="text-sm text-slate-500">
-            Inventario comprado a proveedores o compradas directo (sin proveedor)
-          </p>
-        </div>
+      <PageHeader
+        title="Cuentas madre"
+        subtitle="Inventario comprado a proveedores o compradas directo (sin proveedor)"
+      >
         <Button onClick={() => setModal(true)}>+ Nueva cuenta madre</Button>
-      </header>
+      </PageHeader>
 
-      <div className="relative max-w-sm">
-        <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <Input
-          className="pl-9"
-          placeholder="Buscar por correo, plataforma o proveedor…"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-        />
-      </div>
+      <Buscador
+        value={busqueda}
+        onChange={setBusqueda}
+        placeholder="Buscar por correo, plataforma o proveedor…"
+      />
 
       {cuentas.length === 0 ? (
-        <Loading />
+        <EmptyState message="Todavía no hay cuentas madre registradas." />
       ) : (
         <Table
           headers={['Correo', 'Proveedor', 'Plataforma', 'Cupos', 'Costo', 'Fecha corte', 'Estado', '']}
@@ -234,19 +241,12 @@ export default function CuentasMadre() {
               siempre).
             </p>
           </Field>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setModal(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => void guardar()}
-              disabled={
-                !form.plataforma_id || !form.correo_cuenta.trim() || !form.cupos_totales
-              }
-            >
-              Guardar
-            </Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setModal(false)}
+            onSave={() => void guardar()}
+            disabled={!form.plataforma_id || !form.correo_cuenta.trim() || !form.cupos_totales}
+            guardando={guardando}
+          />
         </div>
       </Modal>
     </div>

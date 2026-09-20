@@ -7,19 +7,24 @@ import {
   fetchClientes,
 } from '../lib/api'
 import type { Usuario } from '../lib/types'
+import { fmtDateTime } from '../lib/format'
+import { errMsg } from '../lib/err'
 import {
   Badge,
   Button,
+  Buscador,
+  EmptyState,
   ErrorMsg,
   Field,
   Input,
   Loading,
   Modal,
+  ModalFooter,
+  PageHeader,
   Select,
   Table,
   Td,
 } from '../components/ui'
-import { IconSearch } from '../components/icons'
 
 const vacio = { nombre: '', email: '', telefono: '', referido_por: '' }
 
@@ -27,8 +32,10 @@ export default function Clientes() {
   const [clientes, setClientes] = useState<Usuario[]>([])
   const [agentes, setAgentes] = useState<Usuario[]>([])
   const [busqueda, setBusqueda] = useState('')
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(false)
+  const [guardando, setGuardando] = useState(false)
   const [editando, setEditando] = useState<Usuario | null>(null)
   const [form, setForm] = useState(vacio)
 
@@ -39,7 +46,9 @@ export default function Clientes() {
       setAgentes(a)
       setError('')
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setCargando(false)
     }
   }, [])
 
@@ -73,6 +82,8 @@ export default function Clientes() {
   }
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       if (editando) {
         await actualizarCliente(editando.id, { nombre: form.nombre, email: form.email, telefono: form.telefono })
@@ -82,7 +93,9 @@ export default function Clientes() {
       setModal(false)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -97,42 +110,33 @@ export default function Clientes() {
       await eliminarCliente(c.id)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
     }
   }
 
+  if (cargando) return <Loading />
   if (error) return <ErrorMsg message={error} />
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Clientes</h1>
-          <p className="text-sm text-slate-500">Alta, baja y modificación de clientes</p>
-        </div>
+      <PageHeader title="Clientes" subtitle="Alta, baja y modificación de clientes">
         <Button onClick={abrirNuevo}>+ Nuevo cliente</Button>
-      </header>
+      </PageHeader>
 
-      <div className="relative max-w-sm">
-        <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <Input
-          className="pl-9"
-          placeholder="Buscar por nombre, email o teléfono…"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-        />
-      </div>
+      <Buscador
+        value={busqueda}
+        onChange={setBusqueda}
+        placeholder="Buscar por nombre, email o teléfono…"
+      />
 
       <p className="text-xs text-slate-400">
         Mostrando {filtrados.length} de {clientes.length} clientes.
       </p>
 
       {clientes.length === 0 ? (
-        <Loading />
+        <EmptyState message="Todavía no hay clientes registrados." />
       ) : (
-        <Table
-          headers={['Nombre', 'Email', 'Teléfono', 'Referido por', 'Registro', 'Acciones']}
-        >
+        <Table headers={['Nombre', 'Email', 'Teléfono', 'Referido por', 'Registro', 'Acciones']}>
           {filtrados.map((c) => {
             const agente = agentes.find((a) => a.id === c.referido_por)
             return (
@@ -141,7 +145,7 @@ export default function Clientes() {
                 <Td>{c.email ?? '—'}</Td>
                 <Td>{c.telefono ?? '—'}</Td>
                 <Td>{agente?.nombre ?? '—'}</Td>
-                <Td>{new Date(c.created_at).toLocaleDateString('es-VE')}</Td>
+                <Td>{fmtDateTime(c.created_at)}</Td>
                 <Td>
                   <div className="flex gap-2">
                     <Button variant="secondary" onClick={() => abrirEditar(c)}>
@@ -204,14 +208,12 @@ export default function Clientes() {
               El referido no se modifica aquí (política de trazabilidad).
             </p>
           )}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={() => void guardar()} disabled={!form.nombre.trim()}>
-              Guardar
-            </Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setModal(false)}
+            onSave={() => void guardar()}
+            disabled={!form.nombre.trim()}
+            guardando={guardando}
+          />
         </div>
       </Modal>
 

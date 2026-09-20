@@ -80,6 +80,34 @@
 - **chore** `vite.config.ts` con `base: './'` + `HashRouter`: el build funciona servido desde cualquier subruta (GitHub Pages `/suscripciones/`) sin configuración de servidor.
 - **infra** Despliegue inicial a **GitHub Pages** desde la rama `gh-pages` (build local con anon key, sin secretos).
 
+## 2026-09-20 — Fase 2.3 · Pulido, estandarización y publicación
+
+### v0.2.3
+
+- **infra** Repo **publicado en GitHub** (go-plans/suscripciones, visibilidad pública) y
+  **GitHub Pages activado** vía API (`gh-pages` + path `/`). El sitio responde HTTP 200 en
+  `https://go-plans.github.io/suscripciones/`.
+- **refactor** Primitivas de UI compartidas en `ui.tsx`: `PageHeader` (encabezado estándar),
+  `Buscador` (input + lupa), `EmptyState` y `ModalFooter` (Cancelar + Guardar con estado
+  `guardando`). Todas las páginas e inline components las usan.
+- **refactor** Patrón de carga unificado en las 8 páginas: estado `cargando` inicial → `Loading`;
+  error → `ErrorMsg`; **lista vacía → `EmptyState`** (antes una lista sin datos mostraba
+  «Cargando…» indefinidamente).
+- **refactor** `src/lib/err.ts` con `errMsg(e)`; todos los `catch` de páginas, `api.ts` y
+  `inline.tsx` lo usan (retirados los `(e as Error).message` a mano y el helper local `msg`).
+- **fix** Protección contra doble clic en todos los formularios de creación (páginas + registro
+  inline) mediante el estado `guardando`.
+- **fix** Fechas de tabla en Pagos/Clientes ahora usan `fmtDate`/`fmtDateTime` (es-VE) en lugar de
+  `toLocaleDateString` a mano; el badge del dashboard distingue «vencida» (días negativos) de
+  «0» (corte hoy).
+- **chore** `crearSuscripcion` devuelve el `id` como el resto de creadores (consistencia de API).
+- **chore** `index.html`: `lang="es"`, título «Suscripciones · Panel administrativo» y meta
+  description (antes `lang="en"` y título `app`).
+- **docs** `README.md` raíz (repo público, migraciones 0001-0006, Fase 2 completa), `.env.example`
+  versionado, `05-seguridad.md` (sección Auth + RLS y checklist), `06-desarrollo.md` (estructura
+  y convenciones de UI), `07-despliegue.md` (procedimiento real Pages), `08-changelog.md` (esta
+  entrada).
+
 ## Próximos
 
 - **security** Rotación de claves expuestas en el chat (la `service_role` ya no viaja en el bundle, pero conviene emitir una nueva y descartar la actual).

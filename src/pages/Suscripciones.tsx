@@ -9,20 +9,24 @@ import {
 } from '../lib/api'
 import type { CuentaMadreRow, PlanRow, SuscripcionRow, Usuario } from '../lib/types'
 import { fmtDate, fmtUSD, hoy } from '../lib/format'
+import { errMsg } from '../lib/err'
 import {
   Badge,
   Button,
+  Buscador,
+  EmptyState,
   ErrorMsg,
   Field,
   Input,
   Loading,
   Modal,
+  ModalFooter,
+  PageHeader,
   Select,
   Table,
   Td,
 } from '../components/ui'
 import { NuevoCliente, NuevaCuenta, NuevoPlan } from '../components/inline'
-import { IconSearch } from '../components/icons'
 
 const vacio = {
   cliente_id: '',
@@ -41,8 +45,10 @@ export default function Suscripciones() {
   const [planes, setPlanes] = useState<PlanRow[]>([])
   const [cuentas, setCuentas] = useState<CuentaMadreRow[]>([])
   const [busqueda, setBusqueda] = useState('')
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(false)
+  const [guardando, setGuardando] = useState(false)
   const [form, setForm] = useState<FormState>(vacio)
 
   const cargar = useCallback(async () => {
@@ -59,7 +65,9 @@ export default function Suscripciones() {
       setCuentas(cm)
       setError('')
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setCargando(false)
     }
   }, [])
 
@@ -98,6 +106,8 @@ export default function Suscripciones() {
   }, [susc, busqueda])
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       await crearSuscripcion({
         cliente_id: form.cliente_id,
@@ -111,7 +121,9 @@ export default function Suscripciones() {
       setForm({ ...vacio })
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -120,43 +132,41 @@ export default function Suscripciones() {
       await cambiarEstadoSuscripcion(s.id, estado)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
     }
   }
 
+  if (cargando) return <Loading />
   if (error) return <ErrorMsg message={error} />
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Suscripciones</h1>
-          <p className="text-sm text-slate-500">
-            Contratos por cliente · también sirve para registrar suscripciones vendidas antes
-            del sistema
-          </p>
-        </div>
-        <Button onClick={() => { setForm({ ...vacio }); setModal(true) }}>
+      <PageHeader
+        title="Suscripciones"
+        subtitle="Contratos por cliente · también sirve para registrar suscripciones vendidas antes del sistema"
+      >
+        <Button
+          onClick={() => {
+            setForm({ ...vacio })
+            setModal(true)
+          }}
+        >
           + Nueva suscripción
         </Button>
-      </header>
+      </PageHeader>
 
-      <div className="relative max-w-sm">
-        <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <Input
-          className="pl-9"
-          placeholder="Buscar por cliente, plataforma o cuenta…"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-        />
-      </div>
+      <Buscador
+        value={busqueda}
+        onChange={setBusqueda}
+        placeholder="Buscar por cliente, plataforma o cuenta…"
+      />
 
       <p className="text-xs text-slate-400">
         Mostrando {filtradas.length} de {susc.length} suscripciones.
       </p>
 
       {susc.length === 0 ? (
-        <Loading />
+        <EmptyState message="Todavía no hay suscripciones registradas." />
       ) : (
         <Table
           headers={['Cliente', 'Plan', 'Cuenta madre', 'Inicio', 'Corte', 'Estado', 'Acciones']}
@@ -281,23 +291,18 @@ export default function Suscripciones() {
             Para suscripciones vendidas antes del sistema: escribe la fecha real de inicio y el
             estado actual.
           </p>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setModal(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => void guardar()}
-              disabled={
-                !form.cliente_id ||
-                !form.plan_id ||
-                !form.cuenta_madre_id ||
-                !form.fecha_inicio ||
-                !form.fecha_corte_cliente
-              }
-            >
-              Guardar
-            </Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setModal(false)}
+            onSave={() => void guardar()}
+            disabled={
+              !form.cliente_id ||
+              !form.plan_id ||
+              !form.cuenta_madre_id ||
+              !form.fecha_inicio ||
+              !form.fecha_corte_cliente
+            }
+            guardando={guardando}
+          />
         </div>
       </Modal>
     </div>

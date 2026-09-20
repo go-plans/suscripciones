@@ -4,12 +4,23 @@ import {
   fetchVencimientosProveedores,
 } from '../lib/api'
 import { fmtDate, fmtUSD } from '../lib/format'
+import { errMsg } from '../lib/err'
 import type { VencimientoProveedor } from '../lib/types'
-import { Badge, Card, ErrorMsg, Loading, StatCard, Table, Td } from '../components/ui'
+import {
+  Badge,
+  Card,
+  ErrorMsg,
+  Loading,
+  PageHeader,
+  StatCard,
+  Table,
+  Td,
+} from '../components/ui'
 
 export default function Dashboard() {
   const [resumen, setResumen] = useState<Awaited<ReturnType<typeof fetchResumen>> | null>(null)
   const [vencimientos, setVencimientos] = useState<VencimientoProveedor[]>([])
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
   const cargar = useCallback(async () => {
@@ -19,7 +30,9 @@ export default function Dashboard() {
       setVencimientos(v)
       setError('')
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setCargando(false)
     }
   }, [])
 
@@ -27,14 +40,12 @@ export default function Dashboard() {
     void cargar()
   }, [cargar])
 
+  if (cargando) return <Loading />
   if (error) return <ErrorMsg message={error} />
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500">Resumen general del negocio</p>
-      </header>
+      <PageHeader title="Dashboard" subtitle="Resumen general del negocio" />
 
       {resumen ? (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
@@ -81,7 +92,9 @@ export default function Dashboard() {
                 <Td>{fmtUSD(v.costo_renovacion_usd)}</Td>
                 <Td>{fmtDate(v.fecha_corte_proveedor)}</Td>
                 <Td>
-                  <Badge value={v.dias_restantes <= 0 ? 'vencida' : String(v.dias_restantes)} />
+                  <Badge
+                    value={v.dias_restantes < 0 ? 'vencida' : String(v.dias_restantes)}
+                  />
                 </Td>
               </tr>
             ))}

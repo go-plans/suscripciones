@@ -38,7 +38,7 @@ supabase db push               # aplica migrations/ (requiere conexión directa/
 
 | Dato | Valor |
 |---|---|
-| Repositorio | `go-plans/suscripciones` (privado) |
+| Repositorio | `go-plans/suscripciones` (público desde 2026-09-20 — requisito de GitHub Pages gratis) |
 | Autenticación | Personal Access Token (scope `repo` + `workflow`) |
 | Origen remoto | `https://github.com/go-plans/suscripciones.git` |
 

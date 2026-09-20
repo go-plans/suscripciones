@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
-import { IconX } from './icons'
+import { IconSearch, IconX } from './icons'
 
 // ---------- Botones ----------
 type BtnVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
@@ -170,5 +170,80 @@ export function Loading() {
 export function ErrorMsg({ message }: { message: string }) {
   return (
     <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{message}</p>
+  )
+}
+
+// ---------- Encabezado de página estándar ----------
+export function PageHeader({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  children?: ReactNode
+}) {
+  return (
+    <header className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 className="text-xl font-bold text-slate-900">{title}</h1>
+        {subtitle ? <p className="text-sm text-slate-500">{subtitle}</p> : null}
+      </div>
+      {children}
+    </header>
+  )
+}
+
+// ---------- Búsqueda estándar ----------
+export function Buscador({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  return (
+    <div className="relative max-w-sm">
+      <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <Input
+        className="pl-9"
+        placeholder={placeholder ?? 'Buscar…'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  )
+}
+
+// ---------- Estado vacío ----------
+export function EmptyState({ message = 'Sin registros por ahora.' }: { message?: string }) {
+  return <p className="py-8 text-center text-sm text-slate-400">{message}</p>
+}
+
+// ---------- Pie de modal estándar (Cancelar + Guardar) ----------
+export function ModalFooter({
+  onCancel,
+  onSave,
+  saveLabel = 'Guardar',
+  disabled = false,
+  guardando = false,
+}: {
+  onCancel: () => void
+  onSave: () => void
+  saveLabel?: string
+  disabled?: boolean
+  guardando?: boolean
+}) {
+  return (
+    <div className="flex justify-end gap-2 pt-2">
+      <Button variant="secondary" onClick={onCancel} disabled={guardando}>
+        Cancelar
+      </Button>
+      <Button onClick={onSave} disabled={disabled || guardando}>
+        {guardando ? 'Guardando…' : saveLabel}
+      </Button>
+    </div>
   )
 }

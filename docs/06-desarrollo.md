@@ -85,12 +85,14 @@ src/
 │   ├── supabase.ts   # cliente con anon key SOLO (auth + RLS; service_role prohibida en bundle)
 │   ├── auth.tsx      # AuthProvider + useAuth (sesión Supabase Auth persistida) + login/logout
 │   ├── api.ts        # capa única de acceso a datos (listas con caché TTL 20 s + invalidación en escrituras)
+│   ├── err.ts        # errMsg(e): mensaje de error robusto (único helper de errores)
 │   ├── types.ts      # tipos que reflejan el esquema de la DB
-│   └── format.ts     # formatos es-VE: VES/USD/USDT (punto-miles, coma-decimales), fechas locales
+│   └── format.ts     # formatos es-VE: VES/USD/USDT (punto-miles, coma-decimales), fechas locales, hoy()
 ├── components/
 │   ├── icons.tsx     # iconos vectoriales tipo Lucide (sin emojis)
 │   ├── inline.tsx    # registro inline: NuevoCliente, NuevoPlan, NuevaCuenta, NuevoProveedor, NuevaPlataforma
-│   ├── ui.tsx        # primitivas (Button, Input, Select, Table con cabecera fija, Badge, Modal, StatCard…)
+│   ├── ui.tsx        # primitivas: Button/Input/Select/Field, Table, Badge, Card/StatCard, Modal+
+│   │                #   ModalFooter, PageHeader, Buscador, EmptyState, Loading/ErrorMsg
 │   └── Layout.tsx    # sidebar (iconos vectoriales) + email de sesión + botón "Cerrar sesión" + <Outlet/>
 └── pages/            # carga perezosa: React.lazy + Suspense (un chunk por página)
     ├── Login.tsx             # autenticación (email + contraseña Supabase Auth)
@@ -103,6 +105,16 @@ src/
     ├── Pagos.tsx             # calculadora BCV (+ botón "Reflejar tasa" dolarapi), tasa Binance USDT, distribución
     └── Comisiones.tsx        # lista 30% + liquidación + filtro por estado
 ```
+
+### Convenciones de UI (Fase 2.3)
+
+- **Encabezados**: toda página usa `PageHeader` (`title`, `subtitle`, acciones a la derecha).
+- **Buscadores**: `Buscador` (input + icono) en Clientes, Suscripciones y Cuentas madre.
+- **Carga/estados**: patrón en cada página — `cargando` (inicial) → `Loading`; error → `ErrorMsg`;
+  lista vacía → `EmptyState` (antes una lista sin datos mostraba «Cargando…» para siempre).
+- **Formularios en modal**: pie estándar `ModalFooter` (Cancelar + Guardar con estado
+  `guardando` contra doble clic) en páginas y componentes inline.
+- **Errores**: siempre `errMsg(e)` de `src/lib/err.ts` (nunca `(e as Error).message` a mano).
 
 ### Nota de seguridad (FASE 2.2 — DESPLIEGUE)
 
@@ -134,13 +146,13 @@ git add -A && git commit -m "..." && git push origin main
 git worktree add --orphan -b gh-pages .ghpages
 Copy-Item dist\* .ghpages\ -Recurse -Force
 git -C .ghpages add -A
-git -C .ghpages commit -m "deploy: release v0.2.2"
+git -C .ghpages commit -m "deploy: release v0.2.3"
 git -C .ghpages push origin gh-pages --force
 git worktree remove .ghpages
 ```
 
 - URL del sitio: `https://go-plans.github.io/suscripciones/` (el login está en
   `/#/login`; las credenciales del admin viven en `API KEYS.txt`, fuera del repo).
-- GitHub Pages en una cuenta gratuita solo sirve repos **públicos**; si el repo
-  sigue privado, el sitio no se publicará (o requerirá plan de pago).
+- GitHub Pages en una cuenta gratuita solo sirve repos **públicos** (por eso el repo
+  `go-plans/suscripciones` es público desde Fase 2.3; un repo privado requeriría plan de pago).
 - El build de Pages NO lleva secretos: la anon key es publishable por diseño.

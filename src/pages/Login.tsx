@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { errMsg } from '../lib/err'
 import { Button, Field, Input } from '../components/ui'
 import { IconLock } from '../components/icons'
 
@@ -25,7 +26,7 @@ export default function Login() {
       await entrar(email.trim(), password)
       navigate('/', { replace: true })
     } catch (err) {
-      setError((err as Error).message)
+      setError(errMsg(err))
       setCargando(false)
     }
   }

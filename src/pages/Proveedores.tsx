@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { crearProveedor, eliminarProveedor, fetchProveedores } from '../lib/api'
 import type { Proveedor } from '../lib/types'
+import { errMsg } from '../lib/err'
 import {
   Button,
+  EmptyState,
   ErrorMsg,
   Field,
   Input,
   Loading,
   Modal,
+  ModalFooter,
+  PageHeader,
   Table,
   Td,
 } from '../components/ui'
@@ -16,8 +20,10 @@ const vacio = { nombre: '', contacto: '', metodo_pago_preferido: '' }
 
 export default function Proveedores() {
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(false)
+  const [guardando, setGuardando] = useState(false)
   const [form, setForm] = useState(vacio)
 
   const cargar = useCallback(async () => {
@@ -25,7 +31,9 @@ export default function Proveedores() {
       setProveedores(await fetchProveedores())
       setError('')
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setCargando(false)
     }
   }, [])
 
@@ -34,13 +42,17 @@ export default function Proveedores() {
   }, [cargar])
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       await crearProveedor(form)
       setModal(false)
       setForm(vacio)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -50,24 +62,21 @@ export default function Proveedores() {
       await eliminarProveedor(p.id)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
     }
   }
 
+  if (cargando) return <Loading />
   if (error) return <ErrorMsg message={error} />
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Proveedores</h1>
-          <p className="text-sm text-slate-500">Quiénes te venden las cuentas madre</p>
-        </div>
+      <PageHeader title="Proveedores" subtitle="Quiénes te venden las cuentas madre">
         <Button onClick={() => setModal(true)}>+ Nuevo proveedor</Button>
-      </header>
+      </PageHeader>
 
       {proveedores.length === 0 ? (
-        <Loading />
+        <EmptyState message="Todavía no hay proveedores registrados." />
       ) : (
         <Table headers={['Nombre', 'Contacto', 'Método de pago', 'Acciones']}>
           {proveedores.map((p) => (
@@ -110,14 +119,12 @@ export default function Proveedores() {
               placeholder="Zelle, Pago Móvil…"
             />
           </Field>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={() => void guardar()} disabled={!form.nombre.trim()}>
-              Guardar
-            </Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setModal(false)}
+            onSave={() => void guardar()}
+            disabled={!form.nombre.trim()}
+            guardando={guardando}
+          />
         </div>
       </Modal>
     </div>

@@ -7,14 +7,18 @@ import {
 } from '../lib/api'
 import type { Plataforma } from '../lib/types'
 import { fmtDate } from '../lib/format'
+import { errMsg } from '../lib/err'
 import {
   Badge,
   Button,
+  EmptyState,
   ErrorMsg,
   Field,
   Input,
   Loading,
   Modal,
+  ModalFooter,
+  PageHeader,
   Table,
   Td,
 } from '../components/ui'
@@ -24,8 +28,10 @@ const vacio = { nombre: '', activa: true, aplica_comision: false }
 
 export default function Plataformas() {
   const [plataformas, setPlataformas] = useState<Plataforma[]>([])
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(false)
+  const [guardando, setGuardando] = useState(false)
   const [editando, setEditando] = useState<Plataforma | null>(null)
   const [form, setForm] = useState(vacio)
 
@@ -34,7 +40,9 @@ export default function Plataformas() {
       setPlataformas(await fetchPlataformasTodas())
       setError('')
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setCargando(false)
     }
   }, [])
 
@@ -55,6 +63,8 @@ export default function Plataformas() {
   }
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       if (editando) {
         await actualizarPlataforma(editando.id, form)
@@ -64,7 +74,9 @@ export default function Plataformas() {
       setModal(false)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -79,26 +91,24 @@ export default function Plataformas() {
       await eliminarPlataforma(p.id)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
     }
   }
 
+  if (cargando) return <Loading />
   if (error) return <ErrorMsg message={error} />
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Plataformas</h1>
-          <p className="text-sm text-slate-500">
-            Catálogo de servicios y si generan comisión de referido (30%)
-          </p>
-        </div>
+      <PageHeader
+        title="Plataformas"
+        subtitle="Catálogo de servicios y si generan comisión de referido (30%)"
+      >
         <Button onClick={abrirNuevo}>+ Nueva plataforma</Button>
-      </header>
+      </PageHeader>
 
       {plataformas.length === 0 ? (
-        <Loading />
+        <EmptyState message="Todavía no hay plataformas registradas." />
       ) : (
         <Table headers={['Nombre', 'Estado', 'Comisión 30%', 'Registro', 'Acciones']}>
           {plataformas.map((p) => (
@@ -170,14 +180,12 @@ export default function Plataformas() {
             />
             Genera comisión de referido (30%)
           </label>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={() => void guardar()} disabled={!form.nombre.trim()}>
-              Guardar
-            </Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setModal(false)}
+            onSave={() => void guardar()}
+            disabled={!form.nombre.trim()}
+            guardando={guardando}
+          />
         </div>
       </Modal>
     </div>

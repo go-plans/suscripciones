@@ -11,7 +11,8 @@ import {
   fetchProveedores,
 } from '../lib/api'
 import type { Plataforma, Proveedor, Usuario } from '../lib/types'
-import { Button, ErrorMsg, Field, Input, Modal, Select } from './ui'
+import { errMsg } from '../lib/err'
+import { ErrorMsg, Field, Input, Modal, ModalFooter, Select } from './ui'
 import { IconPlus } from './icons'
 
 const enlace = 'mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800'
@@ -22,6 +23,7 @@ export function NuevoCliente({ onCreated }: { onCreated: (id: string) => void })
   const [form, setForm] = useState({ nombre: '', email: '', telefono: '', referido_por: '' })
   const [agentes, setAgentes] = useState<Usuario[]>([])
   const [err, setErr] = useState('')
+  const [guardando, setGuardando] = useState(false)
 
   const abrir = async () => {
     setErr('')
@@ -30,13 +32,17 @@ export function NuevoCliente({ onCreated }: { onCreated: (id: string) => void })
   }
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       const id = await crearCliente(form)
       setOpen(false)
       setForm({ nombre: '', email: '', telefono: '', referido_por: '' })
       onCreated(id)
     } catch (e) {
-      setErr((e as Error).message)
+      setErr(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -64,14 +70,19 @@ export function NuevoCliente({ onCreated }: { onCreated: (id: string) => void })
             >
               <option value="">Sin referido</option>
               {agentes.map((a) => (
-                <option key={a.id} value={a.id}>{a.nombre}</option>
+                <option key={a.id} value={a.id}>
+                  {a.nombre}
+                </option>
               ))}
             </Select>
           </Field>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={() => void guardar()} disabled={!form.nombre.trim()}>Crear y seleccionar</Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setOpen(false)}
+            onSave={() => void guardar()}
+            saveLabel="Crear y seleccionar"
+            disabled={!form.nombre.trim()}
+            guardando={guardando}
+          />
         </div>
       </Modal>
     </>
@@ -84,6 +95,7 @@ export function NuevoPlan({ onCreated }: { onCreated: (id: string) => void }) {
   const [form, setForm] = useState({ plataforma_id: '', duracion_dias: '30', precio: '' })
   const [plataformas, setPlataformas] = useState<Plataforma[]>([])
   const [err, setErr] = useState('')
+  const [guardando, setGuardando] = useState(false)
 
   const abrir = async () => {
     setErr('')
@@ -92,6 +104,8 @@ export function NuevoPlan({ onCreated }: { onCreated: (id: string) => void }) {
   }
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       const id = await crearPlan({
         plataforma_id: form.plataforma_id,
@@ -102,7 +116,9 @@ export function NuevoPlan({ onCreated }: { onCreated: (id: string) => void }) {
       setForm({ plataforma_id: '', duracion_dias: '30', precio: '' })
       onCreated(id)
     } catch (e) {
-      setErr((e as Error).message)
+      setErr(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -121,35 +137,38 @@ export function NuevoPlan({ onCreated }: { onCreated: (id: string) => void }) {
             >
               <option value="">Selecciona…</option>
               {plataformas.map((p) => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
               ))}
             </Select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Duración (días) *">
               <Input
-                type="number" min={1}
+                type="number"
+                min={1}
                 value={form.duracion_dias}
                 onChange={(e) => setForm({ ...form, duracion_dias: e.target.value })}
               />
             </Field>
             <Field label="Precio venta (USD) *">
               <Input
-                type="number" min={0} step="0.01"
+                type="number"
+                min={0}
+                step="0.01"
                 value={form.precio}
                 onChange={(e) => setForm({ ...form, precio: e.target.value })}
               />
             </Field>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button
-              onClick={() => void guardar()}
-              disabled={!form.plataforma_id || !form.precio}
-            >
-              Crear y seleccionar
-            </Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setOpen(false)}
+            onSave={() => void guardar()}
+            saveLabel="Crear y seleccionar"
+            disabled={!form.plataforma_id || !Number(form.precio)}
+            guardando={guardando}
+          />
         </div>
       </Modal>
     </>
@@ -170,6 +189,7 @@ export function NuevaCuenta({ onCreated }: { onCreated: (id: string) => void }) 
   const [plataformas, setPlataformas] = useState<Plataforma[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [err, setErr] = useState('')
+  const [guardando, setGuardando] = useState(false)
 
   const abrir = async () => {
     setErr('')
@@ -183,6 +203,8 @@ export function NuevaCuenta({ onCreated }: { onCreated: (id: string) => void }) 
   }
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       const id = await crearCuentaMadre({
         proveedor_id: form.proveedor_id || null,
@@ -195,7 +217,9 @@ export function NuevaCuenta({ onCreated }: { onCreated: (id: string) => void }) 
       setOpen(false)
       onCreated(id)
     } catch (e) {
-      setErr((e as Error).message)
+      setErr(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -220,7 +244,9 @@ export function NuevaCuenta({ onCreated }: { onCreated: (id: string) => void }) 
             >
               <option value="">Selecciona…</option>
               {plataformas.map((p) => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
               ))}
             </Select>
           </Field>
@@ -231,21 +257,26 @@ export function NuevaCuenta({ onCreated }: { onCreated: (id: string) => void }) 
             >
               <option value="">Directo (sin proveedor)</option>
               {proveedores.map((pr) => (
-                <option key={pr.id} value={pr.id}>{pr.nombre}</option>
+                <option key={pr.id} value={pr.id}>
+                  {pr.nombre}
+                </option>
               ))}
             </Select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Cupos totales *">
               <Input
-                type="number" min={1}
+                type="number"
+                min={1}
                 value={form.cupos_totales}
                 onChange={(e) => setForm({ ...form, cupos_totales: e.target.value })}
               />
             </Field>
             <Field label="Costo renov. (USD) *">
               <Input
-                type="number" min={0} step="0.01"
+                type="number"
+                min={0}
+                step="0.01"
                 value={form.costo_renovacion_usd}
                 onChange={(e) => setForm({ ...form, costo_renovacion_usd: e.target.value })}
               />
@@ -258,15 +289,15 @@ export function NuevaCuenta({ onCreated }: { onCreated: (id: string) => void }) 
               onChange={(e) => setForm({ ...form, fecha_corte_proveedor: e.target.value })}
             />
           </Field>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button
-              onClick={() => void guardar()}
-              disabled={!form.correo_cuenta || !form.plataforma_id || !form.costo_renovacion_usd}
-            >
-              Crear y seleccionar
-            </Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setOpen(false)}
+            onSave={() => void guardar()}
+            saveLabel="Crear y seleccionar"
+            disabled={
+              !form.correo_cuenta.trim() || !form.plataforma_id || !Number(form.costo_renovacion_usd)
+            }
+            guardando={guardando}
+          />
         </div>
       </Modal>
     </>
@@ -278,31 +309,49 @@ export function NuevoProveedor({ onCreated }: { onCreated: (id: string) => void 
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ nombre: '', contacto: '', metodo_pago_preferido: '' })
   const [err, setErr] = useState('')
+  const [guardando, setGuardando] = useState(false)
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       const id = await crearProveedor(form)
       setOpen(false)
       setForm({ nombre: '', contacto: '', metodo_pago_preferido: '' })
       onCreated(id)
     } catch (e) {
-      setErr((e as Error).message)
+      setErr(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
   return (
     <>
-      <button type="button" className={enlace} onClick={() => { setErr(''); setOpen(true) }}>
+      <button
+        type="button"
+        className={enlace}
+        onClick={() => {
+          setErr('')
+          setOpen(true)
+        }}
+      >
         <IconPlus width={13} height={13} /> Registrar nuevo proveedor
       </button>
       <Modal open={open} title="Registrar proveedor" onClose={() => setOpen(false)}>
         <div className="space-y-3">
           {err ? <ErrorMsg message={err} /> : null}
           <Field label="Nombre *">
-            <Input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
+            <Input
+              value={form.nombre}
+              onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+            />
           </Field>
           <Field label="Contacto">
-            <Input value={form.contacto} onChange={(e) => setForm({ ...form, contacto: e.target.value })} />
+            <Input
+              value={form.contacto}
+              onChange={(e) => setForm({ ...form, contacto: e.target.value })}
+            />
           </Field>
           <Field label="Método de pago preferido">
             <Input
@@ -310,12 +359,13 @@ export function NuevoProveedor({ onCreated }: { onCreated: (id: string) => void 
               onChange={(e) => setForm({ ...form, metodo_pago_preferido: e.target.value })}
             />
           </Field>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={() => void guardar()} disabled={!form.nombre.trim()}>
-              Crear y seleccionar
-            </Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setOpen(false)}
+            onSave={() => void guardar()}
+            saveLabel="Crear y seleccionar"
+            disabled={!form.nombre.trim()}
+            guardando={guardando}
+          />
         </div>
       </Modal>
     </>
@@ -327,28 +377,43 @@ export function NuevaPlataforma({ onCreated }: { onCreated: (id: string) => void
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ nombre: '', aplica_comision: false })
   const [err, setErr] = useState('')
+  const [guardando, setGuardando] = useState(false)
 
   const guardar = async () => {
+    if (guardando) return
+    setGuardando(true)
     try {
       const id = await crearPlataforma({ nombre: form.nombre, aplica_comision: form.aplica_comision })
       setOpen(false)
       setForm({ nombre: '', aplica_comision: false })
       onCreated(id)
     } catch (e) {
-      setErr((e as Error).message)
+      setErr(errMsg(e))
+    } finally {
+      setGuardando(false)
     }
   }
 
   return (
     <>
-      <button type="button" className={enlace} onClick={() => { setErr(''); setOpen(true) }}>
+      <button
+        type="button"
+        className={enlace}
+        onClick={() => {
+          setErr('')
+          setOpen(true)
+        }}
+      >
         <IconPlus width={13} height={13} /> Registrar nueva plataforma
       </button>
       <Modal open={open} title="Registrar plataforma" onClose={() => setOpen(false)}>
         <div className="space-y-3">
           {err ? <ErrorMsg message={err} /> : null}
           <Field label="Nombre *">
-            <Input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
+            <Input
+              value={form.nombre}
+              onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+            />
           </Field>
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input
@@ -359,12 +424,13 @@ export function NuevaPlataforma({ onCreated }: { onCreated: (id: string) => void
             />
             Genera comisión de referido (30%)
           </label>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={() => void guardar()} disabled={!form.nombre.trim()}>
-              Crear y seleccionar
-            </Button>
-          </div>
+          <ModalFooter
+            onCancel={() => setOpen(false)}
+            onSave={() => void guardar()}
+            saveLabel="Crear y seleccionar"
+            disabled={!form.nombre.trim()}
+            guardando={guardando}
+          />
         </div>
       </Modal>
     </>

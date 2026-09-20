@@ -2,12 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchComisiones, liquidarComision } from '../lib/api'
 import type { ComisionRow } from '../lib/types'
 import { fmtDateTime, fmtUSD } from '../lib/format'
+import { errMsg } from '../lib/err'
 import {
   Badge,
   Button,
   Card,
+  EmptyState,
   ErrorMsg,
   Loading,
+  PageHeader,
   Select,
   StatCard,
   Table,
@@ -17,6 +20,7 @@ import {
 export default function Comisiones() {
   const [comisiones, setComisiones] = useState<ComisionRow[]>([])
   const [filtro, setFiltro] = useState<'todas' | 'pendiente' | 'liquidada'>('todas')
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
   const cargar = useCallback(async () => {
@@ -24,7 +28,9 @@ export default function Comisiones() {
       setComisiones(await fetchComisiones())
       setError('')
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setCargando(false)
     }
   }, [])
 
@@ -43,7 +49,7 @@ export default function Comisiones() {
       await liquidarComision(id)
       await cargar()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
     }
   }
 
@@ -57,14 +63,15 @@ export default function Comisiones() {
     return { pendiente, liquidada }
   }, [comisiones])
 
+  if (cargando) return <Loading />
   if (error) return <ErrorMsg message={error} />
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-xl font-bold text-slate-900">Comisiones de referidos</h1>
-        <p className="text-sm text-slate-500">30% del equivalente USD, generadas por trigger</p>
-      </header>
+      <PageHeader
+        title="Comisiones de referidos"
+        subtitle="30% del equivalente USD, generadas por trigger"
+      />
 
       <div className="grid grid-cols-2 gap-4 lg:w-1/2">
         <StatCard label="Pendientes" value={fmtUSD(resumen.pendiente)} />
@@ -73,7 +80,7 @@ export default function Comisiones() {
 
       <Card title="Historial">
         {comisiones.length === 0 ? (
-          <Loading />
+          <EmptyState message="Todavía no hay comisiones generadas." />
         ) : (
           <>
             <div className="mb-3 flex items-center gap-2">

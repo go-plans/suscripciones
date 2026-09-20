@@ -7,14 +7,17 @@ import {
   registrarPago,
 } from '../lib/api'
 import type { Moneda, PagoRow, SuscripcionRow, Usuario } from '../lib/types'
-import { fmtNum, fmtUSDT, fmtUSD, fmtVES, round2 } from '../lib/format'
+import { fmtDate, fmtNum, fmtUSDT, fmtUSD, fmtVES, round2 } from '../lib/format'
+import { errMsg } from '../lib/err'
 import {
   Button,
   Card,
+  EmptyState,
   ErrorMsg,
   Field,
   Input,
   Loading,
+  PageHeader,
   Select,
   Table,
   Td,
@@ -60,6 +63,7 @@ export default function Pagos() {
   const [clientes, setClientes] = useState<Usuario[]>([])
   const [susc, setSusc] = useState<SuscripcionRow[]>([])
   const [pagos, setPagos] = useState<PagoRow[]>([])
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
   const [form, setForm] = useState<FormState>(estadoInicial)
@@ -81,7 +85,9 @@ export default function Pagos() {
       setError('')
       if (t != null) setForm((f) => (f.tasa === '' ? { ...f, tasa: String(t) } : f))
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
+    } finally {
+      setCargando(false)
     }
   }, [])
 
@@ -159,7 +165,7 @@ export default function Pagos() {
       } else {
         throw new Error('valor inválido')
       }
-    } catch (e) {
+    } catch {
       // Fallback: última tasa guardada en el sistema
       try {
         const t = await fetchTasaDelDia()
@@ -207,7 +213,7 @@ export default function Pagos() {
       if (t != null) setForm((f) => ({ ...f, tasa: String(t) }))
       setPagos(await fetchPagos())
     } catch (e) {
-      setError((e as Error).message)
+      setError(errMsg(e))
     } finally {
       setGuardando(false)
     }
@@ -227,14 +233,14 @@ export default function Pagos() {
         ? fmtUSDT(p.monto_pagado)
         : fmtUSD(p.monto_pagado)
 
+  if (cargando) return <Loading />
+
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-xl font-bold text-slate-900">Pagos (calculadora BCV)</h1>
-        <p className="text-sm text-slate-500">
-          Registra el cobro y distribúyelo entre las suscripciones activas del cliente
-        </p>
-      </header>
+      <PageHeader
+        title="Pagos (calculadora BCV)"
+        subtitle="Registra el cobro y distribúyelo entre las suscripciones activas del cliente"
+      />
 
       {exito ? (
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{exito}</p>
@@ -403,8 +409,7 @@ export default function Pagos() {
                           {fmtUSD(s.planes?.precio_venta_usd ?? 0)}
                         </p>
                         <p className="truncate text-xs text-slate-400">
-                          {s.usuarios?.nombre} · vence:{' '}
-                          {new Date(s.fecha_corte_cliente).toLocaleDateString('es-VE')}
+                          {s.usuarios?.nombre} · vence: {fmtDate(s.fecha_corte_cliente)}
                         </p>
                       </div>
                       <Input
@@ -444,13 +449,13 @@ export default function Pagos() {
 
       <Card title="Últimos pagos registrados">
         {pagos.length === 0 ? (
-          <Loading />
+          <EmptyState message="Todavía no hay pagos registrados." />
         ) : (
           <Table headers={['Cliente', 'Fecha', 'Monto', 'Moneda', 'Tasa', 'Equivalent USD', 'Método']}>
             {pagos.map((p) => (
               <tr key={p.id}>
                 <Td className="font-medium">{p.usuarios?.nombre ?? '—'}</Td>
-                <Td>{new Date(p.fecha_pago).toLocaleDateString('es-VE')}</Td>
+                <Td>{fmtDate(p.fecha_pago)}</Td>
                 <Td>{fmtMontopago(p)}</Td>
                 <Td>
                   <span

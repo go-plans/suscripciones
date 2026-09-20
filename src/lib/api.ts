@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { hoy, round2 } from './format'
+import { errMsg } from './err'
 import type {
   ComisionRow,
   CuentaMadre,
@@ -13,9 +14,6 @@ import type {
   Usuario,
   VencimientoProveedor,
 } from './types'
-
-const msg = (e: unknown): string =>
-  (e as { message?: string })?.message ?? 'Error desconocido'
 
 // ---------- Caché en memoria (TTL 20s) para agilizar la navegación ----------
 const cache = new Map<string, { at: number; data: unknown }>()
@@ -41,7 +39,7 @@ export async function fetchClientes(): Promise<Usuario[]> {
       .select('*')
       .eq('rol', 'cliente')
       .order('nombre')
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as Usuario[]
   })
 }
@@ -53,7 +51,7 @@ export async function fetchAgentes(): Promise<Usuario[]> {
       .select('id, nombre, email')
       .eq('rol', 'agente')
       .order('nombre')
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as Usuario[]
   })
 }
@@ -75,7 +73,7 @@ export async function crearCliente(input: {
     })
     .select('id')
     .single()
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('clientes')
   return (data as { id: string }).id
 }
@@ -92,13 +90,13 @@ export async function actualizarCliente(
       telefono: input.telefono || null,
     })
     .eq('id', id)
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('clientes')
 }
 
 export async function eliminarCliente(id: string): Promise<void> {
   const { error } = await supabase.from('usuarios').delete().eq('id', id)
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('clientes', 'susc', 'pagos', 'resumen', 'comisiones')
 }
 
@@ -109,7 +107,7 @@ export async function fetchProveedores(): Promise<Proveedor[]> {
       .from('proveedores')
       .select('*')
       .order('nombre')
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as Proveedor[]
   })
 }
@@ -128,14 +126,14 @@ export async function crearProveedor(input: {
     })
     .select('id')
     .single()
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('proveedores')
   return (data as { id: string }).id
 }
 
 export async function eliminarProveedor(id: string): Promise<void> {
   const { error } = await supabase.from('proveedores').delete().eq('id', id)
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('proveedores', 'cuentas', 'vencimientos', 'resumen')
 }
 
@@ -148,7 +146,7 @@ export async function fetchPlataformas(): Promise<Plataforma[]> {
       .select('*')
       .eq('activa', true)
       .order('nombre')
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as Plataforma[]
   })
 }
@@ -159,7 +157,7 @@ export async function fetchPlataformasTodas(): Promise<Plataforma[]> {
       .from('plataformas')
       .select('*')
       .order('nombre')
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as Plataforma[]
   })
 }
@@ -178,7 +176,7 @@ export async function crearPlataforma(input: {
     })
     .select('id')
     .single()
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('plataformas', 'plataformas_todas', 'planes')
   return (data as { id: string }).id
 }
@@ -191,13 +189,13 @@ export async function actualizarPlataforma(
     .from('plataformas')
     .update(input)
     .eq('id', id)
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('plataformas', 'plataformas_todas', 'planes', 'resumen')
 }
 
 export async function eliminarPlataforma(id: string): Promise<void> {
   const { error } = await supabase.from('plataformas').delete().eq('id', id)
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('plataformas', 'plataformas_todas', 'planes', 'susc', 'cuentas', 'vencimientos', 'resumen')
 }
 
@@ -207,7 +205,7 @@ export async function fetchPlanes(): Promise<PlanRow[]> {
       .from('planes')
       .select('*, plataformas(nombre)')
       .order('duracion_dias')
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as PlanRow[]
   })
 }
@@ -222,7 +220,7 @@ export async function crearPlan(input: {
     .insert(input)
     .select('id')
     .single()
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('planes', 'resumen')
   return (data as { id: string }).id
 }
@@ -234,7 +232,7 @@ export async function fetchCuentasMadre(): Promise<CuentaMadreRow[]> {
       .from('cuentas_madre')
       .select('*, proveedores(nombre), plataformas(nombre)')
       .order('fecha_corte_proveedor', { ascending: true, nullsFirst: true })
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as CuentaMadreRow[]
   })
 }
@@ -259,7 +257,7 @@ export async function crearCuentaMadre(input: {
     })
     .select('id')
     .single()
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('cuentas', 'vencimientos', 'resumen')
   return (data as { id: string }).id
 }
@@ -272,7 +270,7 @@ export async function cambiarEstadoCuenta(
     .from('cuentas_madre')
     .update({ estado })
     .eq('id', id)
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('cuentas', 'vencimientos', 'resumen')
 }
 
@@ -286,7 +284,7 @@ export async function fetchSuscripciones(): Promise<SuscripcionRow[]> {
       )
       .order('fecha_corte_cliente')
       .limit(300)
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as SuscripcionRow[]
   })
 }
@@ -298,17 +296,22 @@ export async function crearSuscripcion(input: {
   fecha_inicio: string
   fecha_corte_cliente: string
   estado: 'activa' | 'vencida' | 'cancelada'
-}): Promise<void> {
-  const { error } = await supabase.from('suscripciones').insert({
-    cliente_id: input.cliente_id,
-    plan_id: input.plan_id,
-    cuenta_madre_id: input.cuenta_madre_id,
-    fecha_inicio: input.fecha_inicio,
-    fecha_corte_cliente: input.fecha_corte_cliente,
-    estado: input.estado,
-  })
-  if (error) throw new Error(msg(error))
+}): Promise<string> {
+  const { data, error } = await supabase
+    .from('suscripciones')
+    .insert({
+      cliente_id: input.cliente_id,
+      plan_id: input.plan_id,
+      cuenta_madre_id: input.cuenta_madre_id,
+      fecha_inicio: input.fecha_inicio,
+      fecha_corte_cliente: input.fecha_corte_cliente,
+      estado: input.estado,
+    })
+    .select('id')
+    .single()
+  if (error) throw new Error(errMsg(error))
   invalidar('susc', 'cuentas', 'resumen')
+  return (data as { id: string }).id
 }
 
 export async function cambiarEstadoSuscripcion(
@@ -319,7 +322,7 @@ export async function cambiarEstadoSuscripcion(
     .from('suscripciones')
     .update({ estado })
     .eq('id', id)
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('susc', 'cuentas', 'resumen')
 }
 
@@ -331,7 +334,7 @@ export async function fetchComisiones(): Promise<ComisionRow[]> {
       .select('*, usuarios(nombre)')
       .order('created_at', { ascending: false })
       .limit(200)
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as ComisionRow[]
   })
 }
@@ -341,7 +344,7 @@ export async function liquidarComision(id: string): Promise<void> {
     .from('comisiones')
     .update({ estado: 'liquidada' })
     .eq('id', id)
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
   invalidar('comisiones', 'resumen')
 }
 
@@ -353,7 +356,7 @@ export async function fetchTasaDelDia(): Promise<number | null> {
       .select('tasa_bcv')
       .order('fecha', { ascending: false })
       .limit(1)
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     const row = data?.[0] as { tasa_bcv?: number } | undefined
     return row?.tasa_bcv ?? null
   })
@@ -385,7 +388,7 @@ export async function registrarPago(input: {
     })
     .select('id')
     .single()
-  if (error) throw new Error(msg(error))
+  if (error) throw new Error(errMsg(error))
 
   const pagoId = (data as { id: string }).id
 
@@ -397,7 +400,7 @@ export async function registrarPago(input: {
   }))
   if (rows.length > 0) {
     const { error: err2 } = await supabase.from('pago_suscripciones').insert(rows)
-    if (err2) throw new Error(msg(err2))
+    if (err2) throw new Error(errMsg(err2))
   }
   invalidar('pagos', 'comisiones', 'resumen', 'tasa')
 }
@@ -409,7 +412,7 @@ export async function fetchPagos(): Promise<PagoRow[]> {
       .select('*, usuarios(nombre)')
       .order('fecha_pago', { ascending: false })
       .limit(100)
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as PagoRow[]
   })
 }
@@ -423,7 +426,7 @@ export async function fetchVencimientosProveedores(): Promise<
       .from('v_vencimientos_proveedores')
       .select('*')
       .order('dias_restantes')
-    if (error) throw new Error(msg(error))
+    if (error) throw new Error(errMsg(error))
     return (data ?? []) as VencimientoProveedor[]
   })
 }

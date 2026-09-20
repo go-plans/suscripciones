@@ -4,17 +4,39 @@
 
 | Pieza | Dónde | Cómo |
 |---|---|---|
-| Frontend | Hosting estático (Vercel/Netlify/Cloudflare Pages) | build `npm run build` + subida de `dist/` |
+| Frontend | **GitHub Pages** (repo público `go-plans/suscripciones`) | build `npm run build` + publicar `dist/` en rama `gh-pages` |
 | Base de datos | Supabase (gestionado, ya activo) | migraciones `supabase/migrations/` |
 | Edge Functions | Supabase Functions (Deno) | `supabase functions deploy` |
 | Cron | pg_cron en Supabase | job `vencimientos-diarios` (ya activo) y `tasas-bcv-diaria` |
 
-## 2. Desplegar el frontend
+> GitHub Pages en el plan gratuito **exige repo público** para repositorios propios.
+> El repo fue hecho público como parte del despliegue (Fase 2.2).
+
+## 2. Desplegar el frontend (GitHub Pages)
+
+El sitio es 100 % estático (Vite con `base: './'` + `HashRouter`), así que basta
+con publicar el `dist/` en la rama `gh-pages`; la API de GitHub con
+`source.branch = "gh-pages"` + `source.path = "/"` se configuró una sola vez.
 
 ```bash
-npm run build              # produce dist/
-# en Vercel: framework Vite, build command "npm run build", output "dist"
+cd app
+npm run build              # compila con anon key (sin service_role)
+# 1) commitear y pushear el cambio en main primero (así Pages no queda desincronizado)
+git add -A && git commit -m "chore: release vX" && git push origin main
+# 2) publicar el build en la rama gh-pages (worktree huérfano)
+git worktree add --orphan -b gh-pages .ghpages
+Copy-Item dist\* .ghpages\ -Recurse -Force
+git -C .ghpages add -A
+git -C .ghpages commit -m "deploy: release vX"
+git -C .ghpages push origin gh-pages --force
+git worktree remove .ghpages
 ```
+
+- URL del sitio: `https://go-plans.github.io/suscripciones/` (login en `/#/login`;
+  credenciales del admin en `API KEYS.txt`, fuera del repo).
+- Verificación rápida del sitio: el título del HTML servido debe ser
+  «Suscripciones · Panel administrativo» y el bundle **no** debe contener
+  `service_role` (solo anon key).
 
 Variables de entorno del host (nunca commitear):
 
