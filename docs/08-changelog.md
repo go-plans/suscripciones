@@ -34,8 +34,25 @@
 - **feat** Verificación funcional de la base (transaccional, sin datos persistentes): cupos, comisión 30% y rechazo de sobrecupo, todos ✅.
 - **chore** `migracion_completa.sql` (consolidado de 0001+0002+0003 para pegar en SQL Editor) en la raíz `Suscripciones/` (fuera del repo).
 
+## 2026-09-19 — Fase 2 · Panel administrativo
+
+### v0.2.0
+
+- **feat** Panel admin completo en `app/`: Tailwind CSS v4 + `@tailwindcss/vite`, `react-router-dom` v7, `@supabase/supabase-js`.
+- **feat** Dashboard con KPIs (clientes, suscripciones activas/vencidas, comisiones pendientes, ingresos del mes) y alertas de `v_vencimientos_proveedores` (≤3 días).
+- **feat** CRUD de clientes con campo "referido por (agente)" (trazabilidad de comisiones).
+- **feat** CRUD de proveedores y cuentas madre (inventario, suspender/activar, cupos).
+- **feat** CRUD de suscripciones (valida cupos disponibles; el trigger `gestionar_cupos_cuenta_madre` rechaza sobrecupo).
+- **feat** Página Pagos con **calculadora BCV**: monto, moneda (USD/BS/USDT), tasa del día autocargada, equivalente USD automático, distribución por suscripción activa y "repartir automáticamente"; registro dispara comisión 30% automática.
+- **feat** Página Comisiones: listado agente/monto/estado + botón Liquidar.
+- **feat** Migración `0004_demo.sql` (idempotente): agente, 4 clientes, proveedor, 2 cuentas madre, 5 suscripciones, 2 pagos → comisión demo de $3.60 pendiente.
+- **fix** `metodo_pago` en Pagos ahora es un `<select>` con los valores del CHECK de la DB (`Zelle, Pago Movil, Pago Movil Binance, Efectivo, Transferencia, Otro`).
+- **security** Documentado el uso temporal de `service_role` en el bundle (solo localhost); pendiente migrar a Auth + RLS.
+- **chore** `.env` movido a `app/.env` (Vite solo lee `.env` desde la carpeta del proyecto).
+- **docs** `06-desarrollo.md` actualizado (deps, estructura `src/`, nota de seguridad, troubleshooting de npm en Windows).
+
 ## Próximos
 
-- **Fase 2** CRUD de clientes, calculadora BCV, dashboard de vencimientos de proveedores (depende de la UI del frontend).
 - **Fase 3** Catálogo público de venta con la vista `v_catalogo_publico`.
+- **security** Rotación de claves expuestas en el chat + migrar el panel a Supabase Auth + RLS.
 - **feat** Deploy de `fetch-bcv` y activación del cron `tasas-bcv-diaria`.

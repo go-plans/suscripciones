@@ -13,8 +13,9 @@
 cd app
 npm install
 
-# 2) Variables de entorno (crear a partir de API KEYS.txt)
-#    .env  →  SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, DB_PASSWORD, GITHUB_TOKEN
+# 2) Variables de entorno (app/.env — se crea a partir de API KEYS.txt)
+#    VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_SERVICE_ROLE_KEY
+#    ⚠️ .env debe vivir en app/ (Vite solo carga .env desde la carpeta del proyecto).
 
 # 3) Servidor de desarrollo
 npm run dev          # http://localhost:5173
@@ -28,6 +29,19 @@ npm run dev          # http://localhost:5173
 | build | `npm run build` | build de producción (tsc + vite) |
 | preview | `npm run preview` | sirve el build localmente |
 | lint | `npm run lint` | oxlint (config `.oxlintrc.json`) |
+
+## 3b. Dependencias del frontend (Fase 2)
+
+| Paquete | Uso |
+|---|---|
+| `@supabase/supabase-js` | cliente REST (PostgREST) |
+| `react-router-dom` (v7) | rutas `/`, `/clientes`, `/suscripciones`, `/cuentas-madre`, `/proveedores`, `/pagos`, `/comisiones` |
+| `tailwindcss` + `@tailwindcss/vite` (v4) | estilos utilitarios (plugin de Vite, import en `index.css`) |
+
+> `date-fns` **no** se usa: las utilidades de fecha/moneda viven en `src/lib/format.ts` (Intl nativo).
+> ⚠️ npm puede fallar en Windows si se lanzan dos `npm install` a la vez en la misma carpeta
+> (colisiones de extracción). Si `node_modules` queda corrupto: borrar `node_modules` y
+> `package-lock.json` y volver a instalar.
 
 ## 4. Migraciones de base de datos
 
@@ -56,25 +70,40 @@ supabase functions deploy fetch-bcv --no-verify-jwt
 - **Idioma del código**: los identificadores de negocio (nombres de tabla/columna) en inglés; UI en español.
 - **TypeScript estricto**: tipos explícitos para dinero/fechas; nunca `any` en modelos financieros.
 - **Dinero**: usar `number` con redondeo a 2 decimales en el frontend; en la DB `NUMERIC(12,2)`.
-- **Fechas**: usar `date-fns` para vencimientos; comparar fechas (no timestamps) para cortes.
+- **Fechas**: usar `Intl` nativo (helpers en `src/lib/format.ts`); comparar fechas (no timestamps) para cortes.
 - **Commits**: mensajes tipo Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`).
 - Cada cambio que afecte comportamiento se refleja en `docs/08-changelog.md`.
+- **Consultas a datos**: todas a través de `src/lib/api.ts` (capa única); cambiar aquí es cambiar todo.
 
-## 7. Tipos del frontend (esqueleto recomendado)
+## 7. Estructura del frontend (Fase 2)
 
-```ts
-// src/lib/supabase.ts
-import { createClient } from '@supabase/supabase-js'
-
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL ?? '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY ?? ''
-)
-
-// src/types/db.ts
-export type Plan = { id: string; plataforma_id: string; duracion_dias: number; precio_venta_usd: number }
-export type Suscripcion = { id: string; cliente_id: string; plan_id: string; cuenta_madre_id: string; fecha_corte_cliente: string; estado: 'activa' | 'vencida' | 'cancelada' }
 ```
+src/
+├── lib/
+│   ├── supabase.ts   # cliente (service_role en Fase 2 — ver nota de seguridad)
+│   ├── api.ts        # capa única de acceso a datos (clientes, pagos, dashboard…)
+│   ├── types.ts      # tipos que reflejan el esquema de la DB
+│   └── format.ts     # formatos es-VE (USD, BS, fechas)
+├── components/
+│   ├── ui.tsx        # primitivas (Button, Input, Select, Table, Badge, Modal, StatCard…)
+│   └── Layout.tsx    # sidebar + <Outlet/>
+└── pages/
+    ├── Dashboard.tsx        # KPIs + alertas v_vencimientos_proveedores (≤3 días)
+    ├── Clientes.tsx         # CRUD clientes (+ referido por agente)
+    ├── Suscripciones.tsx    # alta/baja/estado (valida cupos en la DB por trigger)
+    ├── CuentasMadre.tsx     # inventario + suspender/activar
+    ├── Proveedores.tsx      # CRUD simple
+    ├── Pagos.tsx            # calculadora BCV + distribución + registro
+    └── Comisiones.tsx       # lista 30% + liquidación
+```
+
+### Nota de seguridad (IMPORTANTE)
+
+El panel admin opera con `VITE_SUPABASE_SERVICE_ROLE_KEY`: una clave con
+privilegios totales que queda **incrustada en el bundle del navegador**.
+Esto es una decisión temporal y **solo aceptable en localhost**.
+Antes de cualquier despliegue al público se debe migrar a Supabase Auth +
+RLS (el RLS de la base ya está preparado para ello). Ver `docs/05-seguridad.md`.
 
 ## 8. Logs
 
