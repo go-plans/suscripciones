@@ -2,6 +2,13 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-23 — Rebrand: la marca queda como "Go Plans"
+
+### v0.3.5
+
+- **feat** **Hero de la portada de la tienda** (`Tienda.tsx`): el título grande pasa a ser **"Go Plans"** (completa el rebrand iniciado en v0.3.4: cabecera con logo "GP" + wordmark "Go Plans" en `BarraTienda`, pies "gestionado por **Go Plans**" y Login del panel ya usan la marca).
+- **style** Tipografía **Google Sans** de forma explícita en la marca y los títulos (`font-family: var(--font-display)`, que arranca con "Google Sans Display" / "Google Sans"). Las referencias internas del panel admin (ruta `/suscripciones`, pestaña "Suscripciones", etc.) se mantienen.
+
 ## 2026-09-20 — Logos oficiales de Canva y Spotify
 
 ### v0.3.4

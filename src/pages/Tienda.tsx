@@ -194,7 +194,7 @@ export default function Tienda() {
           className="text-4xl font-extrabold tracking-tight text-slate-900 md:text-5xl"
           style={{ fontFamily: FONT_DISPLAY }}
         >
-          Tienda
+          Go Plans
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base text-slate-500 md:text-lg">
           Elige tu plataforma favorita y contrata el plan que más te convenga. Pagas en
