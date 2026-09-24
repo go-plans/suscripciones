@@ -1,0 +1,3 @@
+import{i as e}from"./giftcards-BTXUSdHI.js";var t=t=>`https://wa.me/${e}?text=${encodeURIComponent(t)}`,n=(e,t)=>[`Hola ${e} 👋`,`Aquí Go Plans respecto a tu pedido:`,`📦 ${t}`,``,`¿Seguimos con el pago?`].join(`
+`);function r(e){let t=[`Hola! 🛒 Nuevo pedido de ${e.cliente}`,``,...e.lineas.map(e=>`${e.cantidad>1?`${e.cantidad}× `:``}• ${e.texto}`),``,`Total a pagar: ${e.total}`,`Método de pago: ${e.metodo}`];return e.instrucciones?t.push(`Instrucciones: ${e.instrucciones}`):t.push(`Instrucciones de pago: te las confirmo por este chat`),t.push(``,`Confirmo el pedido ✅ ¿Cómo sigo con el pago?`),t.join(`
+`)}var i=e=>`./apple/${e}.png`;export{i,n,r,t};
