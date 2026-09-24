@@ -14,7 +14,8 @@ import {
 import { errMsg } from '../lib/err'
 import { ErrorMsg } from '../components/ui'
 import BarraTienda from '../components/tienda/BarraTienda'
-import { IconoGoogleG, IconoSpotify, IconoCanvaC, WordmarkCanva } from '../components/tienda/IconosMarca'
+import { IconoGoogleG, IconoSpotify, IconoCanvaC, WordmarkCanva, IconoApple } from '../components/tienda/IconosMarca'
+import { desdeGiftCardsEur } from '../lib/giftcards'
 
 const FONT_DISPLAY = 'var(--font-display), system-ui, sans-serif'
 
@@ -22,6 +23,32 @@ function precioDesde(p: PlataformaTienda): string | null {
   if (p.planes.length === 0) return null
   const min = Math.min(...p.planes.map((pl) => pl.precio_venta_usd))
   return precioUsd(min)
+}
+
+// ---------- Tarjeta de Apple Gift Cards (estática, siempre en primer lugar) ----------
+function TarjetaApple() {
+  return (
+    <div className="relative rounded-3xl border-2 border-[#D2D2D7] bg-white p-[3px] transition-shadow hover:border-transparent hover:shadow-2xl">
+      <Link
+        to="/tienda/apple"
+        className="group flex h-full flex-col items-center justify-center rounded-3xl p-8 text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl"
+      >
+        <span className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#1D1D1F] shadow-lg transition-transform group-hover:scale-105">
+          <IconoApple className="h-12 w-12 text-white" fill="#FFFFFF" />
+        </span>
+        <h3 className="mt-5 text-2xl font-extrabold tracking-tight text-[#1D1D1F]">
+          Apple Gift Cards
+        </h3>
+        <p className="mt-1 text-sm text-[#6E6E73]">For everything and everyone.</p>
+        <p className="mt-4 text-sm font-semibold text-[#0071E3]">
+          Desde {desdeGiftCardsEur()}
+        </p>
+        <span className="mt-5 rounded-full bg-[#0071E3] px-6 py-2.5 text-sm font-semibold text-white transition-colors group-hover:bg-[#0077ED]">
+          Ver tarjetas →
+        </span>
+      </Link>
+    </div>
+  )
 }
 
 // ---------- Tarjeta de plataforma (estética de cada marca) ----------
@@ -223,6 +250,7 @@ export default function Tienda() {
           </p>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <TarjetaApple />
             {visibles.map((p) => (
               <TarjetaMarca key={p.nombre} p={p} />
             ))}

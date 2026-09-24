@@ -18,6 +18,8 @@ const CuentasMadre = lazy(() => import('./pages/CuentasMadre'))
 const Proveedores = lazy(() => import('./pages/Proveedores'))
 const Pagos = lazy(() => import('./pages/Pagos'))
 const Comisiones = lazy(() => import('./pages/Comisiones'))
+const Planes = lazy(() => import('./pages/Planes'))
+const Pedidos = lazy(() => import('./pages/Pedidos'))
 
 // Guard: sin sesión activa nadie llega al panel (todas sus llamadas usan
 // la anon key y el RLS de la BD solo deja actuar al admin autenticado).
@@ -58,6 +60,8 @@ export default function App() {
               <Route path="clientes" element={<Clientes />} />
               <Route path="suscripciones" element={<Suscripciones />} />
               <Route path="plataformas" element={<Plataformas />} />
+              <Route path="planes" element={<Planes />} />
+              <Route path="pedidos" element={<Pedidos />} />
               <Route path="cuentas-madre" element={<CuentasMadre />} />
               <Route path="proveedores" element={<Proveedores />} />
               <Route path="pagos" element={<Pagos />} />

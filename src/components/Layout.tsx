@@ -4,6 +4,8 @@ import { useAuth } from '../lib/auth'
 import {
   IconCard,
   IconDashboard,
+  IconInbox,
+  IconList,
   IconLogout,
   IconMenu,
   IconPackage,
@@ -18,7 +20,9 @@ const nav = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true },
   { to: '/clientes', label: 'Clientes', icon: IconUsers },
   { to: '/suscripciones', label: 'Suscripciones', icon: IconPackage },
+  { to: '/pedidos', label: 'Pedidos', icon: IconInbox },
   { to: '/plataformas', label: 'Plataformas', icon: IconStore },
+  { to: '/planes', label: 'Planes', icon: IconList },
   { to: '/cuentas-madre', label: 'Cuentas madre', icon: IconServer },
   { to: '/proveedores', label: 'Proveedores', icon: IconStore },
   { to: '/pagos', label: 'Pagos', icon: IconCard },

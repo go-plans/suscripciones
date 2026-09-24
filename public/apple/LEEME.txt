@@ -1,0 +1,22 @@
+Diseños de las Apple Gift Cards
+===============================
+
+Sube aquí las imágenes de los diseños que se eligen al comprar una
+Apple Gift Card (#/tienda/apple). El nombre del archivo debe coincidir
+con el `id` del diseño definido en `src/lib/giftcards.ts`:
+
+  public/apple/clasico.png    →  "Apple Gift Card" (blanca con arcoíris)
+  public/apple/appstore.png   →  "App Store & iTunes" (azul)
+  public/apple/noche.png      →  "Apple Gift Card · Noche" (negro)
+
+Mientras un archivo no exista, la web muestra un placeholder CSS con el
+logo de Apple, el gradiente y el monto seleccionado, así que la tienda
+funciona igual aunque aún no subas las imágenes.
+
+Para añadir un diseño nuevo: agrega la entrada a `DISEÑOS_APPLE` en
+`src/lib/giftcards.ts` (id, nombre, descripción, gradiente y color de
+texto) y sube el PNG con ese id.
+
+Formato sugerido: PNG transparente, orientación horizontal (proporción
+de tarjeta de regalo, ~1.586:1, p. ej. 1600×1009 px), sin redondear las
+esquinas (la web las redondea sola).

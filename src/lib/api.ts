@@ -6,8 +6,10 @@ import type {
   ComisionRow,
   CuentaMadre,
   CuentaMadreRow,
+  EstadoPedido,
   Moneda,
   PagoRow,
+  Pedido,
   PlanRow,
   Plataforma,
   Proveedor,
@@ -229,15 +231,89 @@ export async function crearPlan(input: {
   plataforma_id: string
   duracion_dias: number
   precio_venta_usd: number
+  precio_referencia_usd?: number | null
 }): Promise<string> {
   const { data, error } = await supabase
     .from('planes')
-    .insert(input)
+    .insert({
+      plataforma_id: input.plataforma_id,
+      duracion_dias: input.duracion_dias,
+      precio_venta_usd: input.precio_venta_usd,
+      precio_referencia_usd: input.precio_referencia_usd ?? null,
+    })
     .select('id')
     .single()
   if (error) throw new Error(errMsg(error))
   invalidar('planes', 'resumen')
   return (data as { id: string }).id
+}
+
+export async function actualizarPlan(
+  id: string,
+  input: {
+    duracion_dias?: number
+    precio_venta_usd?: number
+    precio_referencia_usd?: number | null
+  },
+): Promise<void> {
+  const { error } = await supabase.from('planes').update(input).eq('id', id)
+  if (error) throw new Error(errMsg(error))
+  invalidar('planes', 'resumen')
+}
+
+export async function eliminarPlan(id: string): Promise<void> {
+  const { error } = await supabase.from('planes').delete().eq('id', id)
+  if (error) throw new Error(errMsg(error))
+  invalidar('planes', 'resumen')
+}
+
+// ---------------------------------------------------------------- Pedidos
+// Pedidos de la tienda (#/tienda). El cliente autenticado crea el suyo
+// (RLS: cliente_id = auth.uid()); el admin los ve y gestiona desde el panel.
+export async function crearPedido(input: {
+  tipo: 'plan' | 'giftcard'
+  plataforma: string
+  duracion_dias?: number | null
+  precio_usd?: number | null
+  valor_giftcard_usd?: number | null
+  precio_giftcard_eur?: number | null
+  diseno_giftcard?: string | null
+  cliente_id: string
+  cliente_nombre: string | null
+  cliente_contacto: string | null
+}): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.from('pedidos').insert({
+    tipo: input.tipo,
+    plataforma: input.plataforma,
+    duracion_dias: input.duracion_dias ?? null,
+    precio_usd: input.precio_usd ?? null,
+    valor_giftcard_usd: input.valor_giftcard_usd ?? null,
+    precio_giftcard_eur: input.precio_giftcard_eur ?? null,
+    diseno_giftcard: input.diseno_giftcard ?? null,
+    cliente_id: input.cliente_id,
+    cliente_nombre: input.cliente_nombre,
+    cliente_contacto: input.cliente_contacto,
+  })
+  if (error) return { ok: false, error: errMsg(error) }
+  invalidar('pedidos')
+  return { ok: true }
+}
+
+export async function fetchPedidos(): Promise<Pedido[]> {
+  return cached('pedidos', async () => {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw new Error(errMsg(error))
+    return (data ?? []) as Pedido[]
+  })
+}
+
+export async function actualizarEstadoPedido(id: string, estado: EstadoPedido): Promise<void> {
+  const { error } = await supabase.from('pedidos').update({ estado }).eq('id', id)
+  if (error) throw new Error(errMsg(error))
+  invalidar('pedidos')
 }
 
 // ---------------------------------------------------------- Cuentas madre

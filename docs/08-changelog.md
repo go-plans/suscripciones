@@ -2,6 +2,18 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-24 — Pedidos de la tienda + gestor de planes + rediseño de Apple Gift Cards
+
+### v0.4.0
+
+- **feat** **Rediseño de la compra de Apple Gift Cards** (`/#/tienda/apple`): en vez del mosaico de denominaciones, la sección de compra ahora tiene dos columnas — a la **izquierda un selector de diseño** (preview grande + miniaturas de `public/apple/<id>.png`, con placeholder CSS mientras no exista la imagen) y a la **derecha una lista** para elegir el monto con el resumen y el botón Comprar.
+- **feat** **Pedidos registrados**: al comprar una gift card o contratar un plan con sesión iniciada se crea un **pedido** (tabla `pedidos`, migración `0011`) con el detalle completo — en las gift cards queda el **monto y el diseño** elegido; en los planes, la plataforma, duración y precio. Enlaces de export: tarifas fijas de gift cards en código (`src/lib/giftcards.ts`), WhatsApp real al 584246603660 con el pedido prellenado.
+- **feat** **Botón "Contratar" para todos los planes**: las tarjetas horizontales de Canva Pro / Spotify Premium (y genéricas) ahora tienen botón de contratación igual que Google One (antes solo elegían sin CTA). Sin sesión → registro; con sesión → pedido + WhatsApp.
+- **feat** **Panel admin — pestaña Pedidos** (`/#/pedidos`): lista de pedidos con filtros por estado (nuevo/contactado/completado/cancelado), detalle del cliente, swatch del diseño en gift cards, cambio de estado en línea y enlace de WhatsApp al cliente.
+- **feat** **Panel admin — gestor de Planes** (`/#/planes`): CRUD de duraciones y precios por plataforma (precio de venta + precio de referencia tachado). La tienda se actualiza al instante porque es 100% de la BD.
+- **fix** **Catálogo**: se eliminan los planes ≥ 540 días (el de 18 meses de Google One, ventas puntuales) y **Canva Pro pasa desde 1.99 $/mes** (antes 8.00 $). Ambos cambios en la migración `0011`.
+- **docs** `01-resumen`, flujos de negocio y base de datos actualizados.
+
 ## 2026-09-23 — Rebrand: la marca queda como "Go Plans"
 
 ### v0.3.5

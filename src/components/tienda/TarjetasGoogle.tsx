@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom'
 import type { PlataformaTienda, PlanTienda } from '../../lib/tienda'
 import { precioUsd } from '../../lib/tienda'
+import ContratarPlan from './ContratarPlan'
 
 // ---------- Colores Google ----------
 const GOOGLE = {
@@ -41,7 +41,7 @@ function AnoGoogle({ className = '' }: { className?: string }) {
 }
 
 // ---------- Tarjeta de precio (variante Google: vertical) ----------
-function CartaPrecio({ plan, destacada }: { plan: PlanTienda; destacada?: boolean }) {
+function CartaPrecio({ plan, destacada, plataforma }: { plan: PlanTienda; destacada?: boolean; plataforma: string }) {
   const tachado = plan.precio_referencia_usd
   const esAno = plan.meses === 12
   return (
@@ -91,16 +91,15 @@ function CartaPrecio({ plan, destacada }: { plan: PlanTienda; destacada?: boolea
             {precioUsd(plan.precio_venta_usd)}
           </p>
         </div>
-        <Link
-          to="/registro"
+        <ContratarPlan
+          plataforma={plataforma}
+          plan={plan}
           className={`mt-auto rounded-full px-6 py-3 text-sm font-semibold transition-colors ${
             destacada
               ? 'bg-[#4285F4] text-white hover:bg-[#1a73e8]'
               : 'bg-[#F8F9FA] text-[#1a73e8] hover:bg-[#E8F0FE]'
           }`}
-        >
-          Contratar
-        </Link>
+        />
       </div>
     </div>
   )
@@ -192,7 +191,12 @@ export default function TarjetasGoogle({ p }: { p: PlataformaTienda }) {
           </h2>
           <div className="mt-8 grid gap-8 md:grid-cols-3 md:gap-5">
             {p.planes.map((plan, i) => (
-              <CartaPrecio key={plan.duracion_dias} plan={plan} destacada={i === p.planes.length - 1} />
+              <CartaPrecio
+                key={plan.duracion_dias}
+                plan={plan}
+                destacada={i === p.planes.length - 1}
+                plataforma={p.nombre}
+              />
             ))}
           </div>
         </div>

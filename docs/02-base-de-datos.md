@@ -4,7 +4,7 @@
 > Migraciones fuente: [`supabase/migrations/`](../supabase/migrations/)
 > Pooler: `aws-0-us-west-2.pooler.supabase.com:5432` (usuario `postgres.<ref>`; el host directo `db.<ref>.supabase.co` no resuelve)
 
-## 1. Modelo de datos (12 tablas + 2 vistas)
+## 1. Modelo de datos (13 tablas + 2 vistas)
 
 Relaciones principales: un **cliente** (`usuarios.rol='cliente'`) puede tener muchas **suscripciones**; cada suscripción se enlaza a una **cuenta madre** (inventario comprado a un **proveedor**); los pagos de clientes (`pagos_ingresos`) se distribuyen en varias suscripciones vía `pago_suscripciones` (pivote).
 
@@ -34,6 +34,16 @@ Relaciones principales: un **cliente** (`usuarios.rol='cliente'`) puede tener mu
 | `pago_suscripciones` | Pivote pago↔suscripción | FKs `pago_ingreso_id`, `suscripcion_id`; unique `(pago_ingreso_id, suscripcion_id)` |
 | `pagos_egresos` | Pagos a proveedores | FKs `proveedor_id`, `cuenta_madre_id`; `monto_pagado_usd` |
 
+### 1.4 Tienda y pedidos (v0.4.0)
+
+| Tabla | Descripción | Claves |
+|---|---|---|
+| `pedidos` | Pedidos de la tienda: gift cards y planes solicitados por clientes registrados | `tipo` ('plan'/'giftcard'), `plataforma`, campos por tipo (`duracion_dias`+`precio_usd` para plans; `valor_giftcard_usd`+`precio_giftcard_eur`+`diseno_giftcard` para gift cards), FK `cliente_id`→`usuarios.id` (ON DELETE SET NULL), `cliente_nombre`, `cliente_contacto`, `estado` ('nuevo'/'contactado'/'completado'/'cancelado') |
+
+> **Tarifas de gift cards en código (fuera de la BD):** los 19 valores USD→EUR de las Apple Gift
+> Cards viven en `src/lib/giftcards.ts` (p. ej. $25 → 30.75 €) a propósito, para que no se editen
+> por accidente desde el panel. Solo hay que tocar ese archivo para cambiar tarifas.
+
 ## 2. Reglas de tipado (críticas)
 
 ```sql
@@ -62,7 +72,7 @@ date            -- fechas de corte (fecha_inicio, fecha_corte_*)
 |---|---|
 | **admin** (usuarios.rol='admin' y id = auth.uid()) | Acceso total (SELECT/INSERT/UPDATE/DELETE) en las 11 tablas de gestión |
 | **agente** | SELECT solo sobre sus propias `comisiones` (`agente_id = auth.uid()`) |
-| **cliente** (autenticado, rol='cliente') | SELECT/UPDATE solo sobre su propia fila en `usuarios` (políticas `cliente_ve_su_fila` / `cliente_edita_su_fila`) |
+| **cliente** (autenticado, rol='cliente') | SELECT/UPDATE solo sobre su propia fila en `usuarios` (políticas `cliente_ve_su_fila` / `cliente_edita_su_fila`); SELECT e INSERT solo sobre **sus propios pedidos** (`cliente_id = auth.uid()`) |
 | **anon** | SELECT sobre `plataformas` y `planes` (únicamente para el catálogo público de venta) |
 
 ```sql

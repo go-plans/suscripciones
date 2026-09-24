@@ -91,6 +91,10 @@ const badgeColors: Record<string, string> = {
   admin: 'bg-purple-100 text-purple-700',
   agente: 'bg-sky-100 text-sky-700',
   cliente: 'bg-slate-200 text-slate-600',
+  nuevo: 'bg-indigo-100 text-indigo-700',
+  contactado: 'bg-amber-100 text-amber-700',
+  completado: 'bg-emerald-100 text-emerald-700',
+  cancelado: 'bg-slate-200 text-slate-600',
 }
 
 export function Badge({ value }: { value: string }) {

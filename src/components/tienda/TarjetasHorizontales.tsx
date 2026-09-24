@@ -1,6 +1,7 @@
 import type { PlataformaTienda, PlanTienda, VarianteHorizontal } from '../../lib/tienda'
 import { precioUsd } from '../../lib/tienda'
 import { IconoSpotify, WordmarkCanva } from './IconosMarca'
+import ContratarPlan from './ContratarPlan'
 
 interface Tema {
   seccion: string
@@ -100,7 +101,7 @@ function LogoGenerico({ nombre, tema }: { nombre: string; tema: Tema }) {
   )
 }
 
-function Fila({ plan, tema }: { plan: PlanTienda; tema: Tema }) {
+function Fila({ plan, tema, plataforma }: { plan: PlanTienda; tema: Tema; plataforma: string }) {
   return (
     <div className={`relative overflow-hidden rounded-3xl p-6 ${tema.tarjeta}`}>
       {plan.ahorroPct ? (
@@ -126,6 +127,14 @@ function Fila({ plan, tema }: { plan: PlanTienda; tema: Tema }) {
           <p className={`text-xs font-medium ${tema.subtexto}`}>
             {plan.meses === 1 ? '' : `${precioUsd(plan.precioMes)}/mes`}
           </p>
+        </div>
+        <div className="sm:w-40">
+          <ContratarPlan
+            plataforma={plataforma}
+            plan={plan}
+            etiqueta="Contratar"
+            className={`w-full rounded-full px-5 py-2.5 text-sm font-semibold transition-colors ${tema.boton}`}
+          />
         </div>
       </div>
     </div>
@@ -182,7 +191,7 @@ export default function TarjetasHorizontales({
               Próximamente… eligiendo precios.
             </p>
           ) : (
-            p.planes.map((plan) => <Fila key={plan.duracion_dias} plan={plan} tema={t} />)
+            p.planes.map((plan) => <Fila key={plan.duracion_dias} plan={plan} tema={t} plataforma={p.nombre} />)
           )}
         </div>
 

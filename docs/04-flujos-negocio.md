@@ -72,6 +72,22 @@ El job `vencimientos-diarios` (00:00) marca como `vencida` toda suscripción act
 3. Los slugs son estables: `google`, `canva`, `spotify` (cualquier plataforma extra usa un slug normalizado de su nombre).
 4. Los precios mostrados ("Desde $") salen del mínimo de `planes.precio_venta_usd` del catálogo público y el equivalente en BS se calcula con la tasa BCV del día.
 
+## 8.1 Apple Gift Cards (v0.4.0)
+
+1. Los **valores y precios son tarifas fijas en código** (`src/lib/giftcards.ts`): 19 denominaciones USD → precio de venta en EUR (p. ej. $25 → 30.75 €). *No viven en la BD* para que no sean editables por accidente.
+2. La página `/#/tienda/apple` unifica la portada (`apple.com/shop/gift-cards`) y la página de compra (`/buy-giftcard`): hero con lema en inglés, chips "¿Dónde puedes usarla?", **selector de diseño** (izquierda) y **lista de montos** (derecha).
+3. Los diseños se cargan de `public/apple/<id>.png` (los subirá el dueño de la tienda); mientras no existan, se muestra un placeholder CSS con el logo y el monto sobre el gradiente del diseño.
+4. Al pulsar **Comprar**:
+   - sin sesión → `/#/registro` (flujo "registro + WhatsApp");
+   - con sesión → se **inserta un pedido** (tipo `giftcard`, con `valor_giftcard_usd`, `precio_giftcard_eur` y `diseno_giftcard`) y se abre WhatsApp al 584246603660 con el pedido prellenado.
+5. En el panel admin, la pestaña **Pedidos** muestra el monto y el diseño de cada gift card (con swatch del diseño elegido).
+
+## 8.2 Pedidos de la tienda (v0.4.0)
+
+- Todo botón "Contratar"/"Comprar" con sesión iniciada crea un **pedido** en la tabla `pedidos` (`tipo` = `plan` | `giftcard`) y abre WhatsApp con el resumen.
+- Sin sesión, el botón lleva al **registro** (`/#/registro`); tras crear la cuenta el cliente vuelve a comprar y el pedido queda registrado con su nombre y teléfono.
+- El admin gestiona los pedidos en `/#/pedidos`: estados `nuevo → contactado → completado | cancelado`, filtros por estado y WhatsApp directo al cliente cuando tiene teléfono.
+
 ## 9. Referidos y agencia (resumen)
 
 1. Cada venta sobre una plataforma con `aplica_comision=true` y cliente con `referido_por` genera **comisión del 30%** automáticamente.

@@ -26,6 +26,7 @@ export interface Plan {
   plataforma_id: string
   duracion_dias: number
   precio_venta_usd: number
+  precio_referencia_usd: number | null
 }
 
 export interface PlanRow extends Plan {
@@ -39,6 +40,28 @@ export interface CatalogoItem {
   duracion_dias: number
   precio_venta_usd: number
   precio_referencia_usd: number | null
+}
+
+export type TipoPedido = 'plan' | 'giftcard'
+
+export type EstadoPedido = 'nuevo' | 'contactado' | 'completado' | 'cancelado'
+
+// Pedido de la tienda (tabla `pedidos`): gift cards y planes solicitados
+// por clientes registrados; se gestionan en el panel admin.
+export interface Pedido {
+  id: string
+  tipo: TipoPedido
+  plataforma: string
+  duracion_dias: number | null
+  precio_usd: number | null
+  valor_giftcard_usd: number | null
+  precio_giftcard_eur: number | null
+  diseno_giftcard: string | null
+  cliente_id: string | null
+  cliente_nombre: string | null
+  cliente_contacto: string | null
+  estado: EstadoPedido
+  created_at: string
 }
 
 export interface Proveedor {

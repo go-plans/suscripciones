@@ -13,6 +13,8 @@ import { ErrorMsg } from '../components/ui'
 import BarraTienda from '../components/tienda/BarraTienda'
 import TarjetasGoogle from '../components/tienda/TarjetasGoogle'
 import TarjetasHorizontales from '../components/tienda/TarjetasHorizontales'
+import TarjetasApple from '../components/tienda/TarjetasApple'
+import { SLUG_APPLE } from '../lib/giftcards'
 
 // Página de detalle de una plataforma (#/tienda/:slug)
 // Muestra los planes con la estética de la marca (Google / Canva / Spotify / genérico).
@@ -24,6 +26,7 @@ export default function TiendaPlataforma() {
   const [noEncontrada, setNoEncontrada] = useState(false)
 
   useEffect(() => {
+    if (slug === SLUG_APPLE) return
     let activo = true
     fetchCatalogoPublico()
       .then((items) => {
@@ -38,12 +41,28 @@ export default function TiendaPlataforma() {
     return () => {
       activo = false
     }
-  }, [])
+  }, [slug])
 
   const p = plataformaPorSlug(plataformas, slug)
   useEffect(() => {
     if (!cargando && !error && !p) setNoEncontrada(true)
   }, [cargando, error, p])
+
+  // Apple Gift Cards: página propia con tarifas fijas en código (sin catálogo)
+  if (slug === SLUG_APPLE) {
+    return (
+      <div className="min-h-screen bg-white">
+        <BarraTienda volver />
+        <TarjetasApple />
+        <footer className="border-t border-slate-200 bg-white py-8">
+          <p className="mx-auto max-w-2xl px-4 text-center text-xs leading-relaxed text-slate-400">
+            Las tarjetas de regalo se pagan en EUR según la tarifa mostrada. Al contratar aceptas
+            ser parte de un plan familiar compartido gestionado por <strong>Go Plans</strong>.
+          </p>
+        </footer>
+      </div>
+    )
+  }
 
   if (noEncontrada) return <Navigate to="/tienda" replace />
 
