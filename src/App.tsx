@@ -3,11 +3,14 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import Layout from './components/Layout'
 import { IconLock } from './components/icons'
+import { CarritoProvider } from './components/tienda/CarritoProvider'
 
 // Carga perezosa: cada página se compila al visitarse (app inicial más rápida)
 const Login = lazy(() => import('./pages/Login'))
 const Tienda = lazy(() => import('./pages/Tienda'))
 const TiendaPlataforma = lazy(() => import('./pages/TiendaPlataforma'))
+const Carrito = lazy(() => import('./pages/Carrito'))
+const Checkout = lazy(() => import('./pages/Checkout'))
 const Registro = lazy(() => import('./pages/Registro'))
 const Ingreso = lazy(() => import('./pages/Ingreso'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -48,13 +51,16 @@ export default function App() {
             </div>
           }
         >
-          <Routes>
-            {/* Rutas públicas del sitio de venta */}
-            <Route path="/tienda" element={<Tienda />} />
-            <Route path="/tienda/:slug" element={<TiendaPlataforma />} />
-            <Route path="/registro" element={<Registro />} />
-            <Route path="/ingreso" element={<Ingreso />} />
-            <Route path="/login" element={<Login />} />
+          <CarritoProvider>
+            <Routes>
+              {/* Rutas públicas del sitio de venta */}
+              <Route path="/tienda" element={<Tienda />} />
+              <Route path="/tienda/:slug" element={<TiendaPlataforma />} />
+              <Route path="/carrito" element={<Carrito />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/registro" element={<Registro />} />
+              <Route path="/ingreso" element={<Ingreso />} />
+              <Route path="/login" element={<Login />} />
             <Route element={<Protegida />}>
               <Route index element={<Dashboard />} />
               <Route path="clientes" element={<Clientes />} />
@@ -69,6 +75,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
+        </CarritoProvider>
         </Suspense>
       </HashRouter>
     </AuthProvider>

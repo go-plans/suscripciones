@@ -1,10 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/auth'
-import { IconLogout } from '../icons'
+import { IconCart, IconLogout } from '../icons'
+import { useCarrito } from './CarritoProvider'
 
 // Barra superior compartida de la tienda pública (#/tienda y detalle de plataforma)
 export default function BarraTienda({ volver = false }: { volver?: boolean }) {
   const { session, rol, perfil, salir } = useAuth()
+  const { total } = useCarrito()
   const navigate = useNavigate()
 
   const salirDeTienda = async () => {
@@ -32,6 +34,18 @@ export default function BarraTienda({ volver = false }: { volver?: boolean }) {
           </Link>
         </div>
         <nav className="flex items-center gap-2 text-sm">
+          <Link
+            to="/carrito"
+            aria-label={`Carrito (${total} artículo${total === 1 ? '' : 's'})`}
+            className="relative inline-flex items-center justify-center rounded-full border border-slate-300 p-2 text-slate-600 transition-colors hover:bg-slate-100"
+          >
+            <IconCart className="h-5 w-5" />
+            {total > 0 ? (
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white">
+                {total}
+              </span>
+            ) : null}
+          </Link>
           {session ? (
             <>
               {rol === 'admin' ? (

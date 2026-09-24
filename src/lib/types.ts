@@ -62,6 +62,10 @@ export interface Pedido {
   cliente_contacto: string | null
   estado: EstadoPedido
   created_at: string
+  // Cobro cotizado en el checkout (v0.5.0)
+  metodo_pago: string | null
+  moneda_cobro: string | null
+  monto_cobro: number | null
 }
 
 export interface Proveedor {

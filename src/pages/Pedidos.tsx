@@ -6,6 +6,7 @@ import { errMsg } from '../lib/err'
 import { disenoPorId, dolar, euro } from '../lib/giftcards'
 import { etiquetaDuracion, precioUsd } from '../lib/tienda'
 import { linkWhatsApp, msjContactoPedido } from '../lib/pedidos'
+import { METODOS_PAGO, fmtMonedaCobro } from '../lib/pagos'
 import {
   Badge,
   EmptyState,
@@ -133,7 +134,7 @@ export default function Pedidos() {
         <EmptyState message="No hay pedidos en esta vista todavía." />
       ) : (
         <Table
-          headers={['Fecha', 'Cliente', 'Pedido', 'Estado', 'Acciones']}
+          headers={['Fecha', 'Cliente', 'Pedido', 'Cobro', 'Estado', 'Acciones']}
         >
           {visibles.map((p) => {
             const telefono = (p.cliente_contacto ?? '').replace(/\D/g, '')
@@ -151,6 +152,22 @@ export default function Pedidos() {
                   ) : null}
                 </Td>
                 <Td>{detalle(p)}</Td>
+                <Td>
+                  {p.metodo_pago ? (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-700">
+                        {METODOS_PAGO.find((x) => x.id === p.metodo_pago)?.nombre ?? p.metodo_pago}
+                      </p>
+                      {p.monto_cobro != null ? (
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {fmtMonedaCobro(p.moneda_cobro ?? 'USDT', p.monto_cobro)}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-400">—</span>
+                  )}
+                </Td>
                 <Td>
                   <select
                     value={p.estado}

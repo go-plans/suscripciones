@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../../lib/auth'
-import { crearPedido } from '../../lib/api'
 import {
   TARJETAS_APPLE,
   DISENOS_APPLE,
@@ -11,7 +9,8 @@ import {
   type TarjetaRegalo,
   type DisenoGiftCard,
 } from '../../lib/giftcards'
-import { rutaImagenDiseno, linkWhatsApp, msjPedidoGiftCard } from '../../lib/pedidos'
+import { rutaImagenDiseno } from '../../lib/pedidos'
+import { useCarrito } from './CarritoProvider'
 import { IconoApple } from './IconosMarca'
 
 const FONT_DISPLAY = 'var(--font-display), system-ui, sans-serif'
@@ -53,9 +52,7 @@ function VisualTarjeta({
 }) {
   const [rota, setRota] = useState(false)
   const src = rutaImagenDiseno(diseno.id)
-  const clase = grande
-    ? 'h-52 w-full max-w-sm'
-    : 'h-16 w-28'
+  const clase = grande ? 'h-52 w-full max-w-sm' : 'h-16 w-28'
 
   if (!rota) {
     return (
@@ -77,7 +74,10 @@ function VisualTarjeta({
       <IconoApple className={grande ? 'h-9 w-9' : 'h-5 w-5'} fill={diseno.texto} />
       {grande ? (
         <>
-          <p className="mt-2 text-3xl font-extrabold tracking-tight" style={{ fontFamily: FONT_DISPLAY }}>
+          <p
+            className="mt-2 text-3xl font-extrabold tracking-tight"
+            style={{ fontFamily: FONT_DISPLAY }}
+          >
             {monto ? dolar(monto.valor_usd) : '$…'}
           </p>
           <p className="text-[10px] font-semibold uppercase tracking-widest opacity-80">
@@ -89,67 +89,42 @@ function VisualTarjeta({
   )
 }
 
-// ---------- Botón de compra (gift card) ----------
-//  · sin sesión → registro de cuenta
-//  · con sesión → registra el pedido (monto + diseño) y abre WhatsApp
-function ComprarGiftCard({ diseno, monto }: { diseno: DisenoGiftCard; monto: TarjetaRegalo }) {
-  const { session, perfil } = useAuth()
-  const [enviando, setEnviando] = useState(false)
-  const [listo, setListo] = useState(false)
-  const [error, setError] = useState('')
+// ---------- Botón "Añadir al carrito" (gift card) ----------
+// El pago se concreta en /#/checkout con los métodos disponibles.
+function AnadeGiftCard({ diseno, monto }: { diseno: DisenoGiftCard; monto: TarjetaRegalo }) {
+  const { agregar } = useCarrito()
+  const [añadido, setAñadido] = useState(false)
 
-  if (!session) {
-    return (
-      <Link
-        to="/registro"
-        className="block w-full rounded-full bg-[#0071E3] px-8 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[#0077ED]"
-      >
-        Comprar
-      </Link>
-    )
-  }
-
-  const comprar = async () => {
-    if (enviando) return
-    setEnviando(true)
-    setError('')
-    const r = await crearPedido({
+  const añadir = () => {
+    agregar({
+      clave: `gc:${diseno.id}:${monto.valor_usd}`,
       tipo: 'giftcard',
       plataforma: 'Apple',
-      duracion_dias: null,
-      precio_usd: null,
+      titulo: `Apple Gift Card · ${dolar(monto.valor_usd)}`,
+      detalle: diseno.nombre,
+      precio_ref: monto.precio_eur,
+      ref_moneda: 'EUR',
+      cantidad: 1,
       valor_giftcard_usd: monto.valor_usd,
       precio_giftcard_eur: monto.precio_eur,
       diseno_giftcard: diseno.id,
-      cliente_id: session.user.id,
-      cliente_nombre: perfil?.nombre ?? null,
-      cliente_contacto: perfil?.telefono ?? null,
     })
-    setEnviando(false)
-    if (r.ok) {
-      setListo(true)
-    } else {
-      setError(r.error ?? 'No se pudo registrar el pedido automáticamente')
-    }
-    window.open(
-      linkWhatsApp(
-        msjPedidoGiftCard(dolar(monto.valor_usd), euro(monto.precio_eur), diseno.nombre),
-      ),
-      '_blank',
-      'noopener,noreferrer',
-    )
+    setAñadido(true)
   }
 
   return (
     <span className="flex flex-col items-stretch gap-1">
       <button
-        onClick={() => void comprar()}
-        disabled={enviando}
-        className="w-full rounded-full bg-[#0071E3] px-8 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[#0077ED] disabled:opacity-60"
+        onClick={añadir}
+        className="w-full rounded-full bg-[#0071E3] px-8 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[#0077ED]"
       >
-        {enviando ? 'Enviando…' : listo ? 'Pedido enviado ✓' : 'Comprar'}
+        {añadido ? '✓ En el carrito' : 'Añadir al carrito'}
       </button>
-      {error ? <span className="text-center text-[10px] text-amber-500">{error}</span> : null}
+      {añadido ? (
+        <Link to="/carrito" className="text-center text-xs font-medium text-[#0071E3] underline">
+          Ver carrito →
+        </Link>
+      ) : null}
     </span>
   )
 }
@@ -186,7 +161,11 @@ function CompraGiftCard() {
                 <span className="mx-auto block">
                   <VisualTarjeta diseno={d} monto={null} />
                 </span>
-                <span className={`mt-1 block text-[11px] leading-tight font-medium ${activo ? 'text-[#0071E3]' : 'text-[#1D1D1F]'}`}>
+                <span
+                  className={`mt-1 block text-[11px] font-medium leading-tight ${
+                    activo ? 'text-[#0071E3]' : 'text-[#1D1D1F]'
+                  }`}
+                >
                   {d.nombre}
                 </span>
               </button>
@@ -216,10 +195,17 @@ function CompraGiftCard() {
                     : 'border-[#D2D2D7] bg-white hover:border-[#86868B]'
                 }`}
               >
-                <span className="text-lg font-extrabold tracking-tight text-[#1D1D1F]" style={{ fontFamily: FONT_DISPLAY }}>
+                <span
+                  className="text-lg font-extrabold tracking-tight text-[#1D1D1F]"
+                  style={{ fontFamily: FONT_DISPLAY }}
+                >
                   {dolar(t.valor_usd)}
                 </span>
-                <span className={`text-sm font-semibold ${activo ? 'text-[#0071E3]' : 'text-[#6E6E73]'}`}>
+                <span
+                  className={`text-sm font-semibold ${
+                    activo ? 'text-[#0071E3]' : 'text-[#6E6E73]'
+                  }`}
+                >
                   {euro(t.precio_eur)}
                 </span>
               </button>
@@ -227,7 +213,7 @@ function CompraGiftCard() {
           })}
         </div>
 
-        {/* Resumen + comprar */}
+        {/* Resumen + añadir al carrito */}
         <div className="mt-4 rounded-3xl border-2 border-[#0071E3] bg-[#F5F5F7] p-5">
           <div className="flex items-center justify-between gap-2 text-sm">
             <span className="text-[#6E6E73]">{diseno.nombre}</span>
@@ -236,8 +222,12 @@ function CompraGiftCard() {
             </span>
           </div>
           <div className="mt-3">
-            <ComprarGiftCard diseno={diseno} monto={monto} />
+            <AnadeGiftCard diseno={diseno} monto={monto} />
           </div>
+          <p className="mt-2 text-center text-[11px] text-[#6E6E73]">
+            Paga con Pago Móvil ({euro(monto.precio_eur)} anclados en Bs), USDT, USDC, Zinli o
+            Binance — mismo importe en €.
+          </p>
         </div>
       </div>
     </div>

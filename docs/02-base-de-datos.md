@@ -29,7 +29,7 @@ Relaciones principales: un **cliente** (`usuarios.rol='cliente'`) puede tener mu
 
 | Tabla | Descripción | Claves |
 |---|---|---|
-| `tasas_cambio` | Histórico de tasa BCV | `fecha` unique, `tasa_bcv NUMERIC(12,4)` |
+| `tasas_cambio` | Histórico de tasas del día | `fecha` unique, `tasa_bcv NUMERIC(12,4)`, `tasa_eur_bs NUMERIC(12,4)` (€→Bs para gift cards de Apple, migración `0012`) |
 | `pagos_ingresos` | Pagos recibidos de clientes | FK `cliente_id`; `moneda` ('USD'/'BS'/'USDT'), `equivalente_usd`, `tasa_bcv_aplicada`, `metodo_pago` ('Zelle'/'Pago Movil'/'Pago Movil Binance'/'Binance'/'Transferencia'/'Otro'), `fecha_pago` |
 | `pago_suscripciones` | Pivote pago↔suscripción | FKs `pago_ingreso_id`, `suscripcion_id`; unique `(pago_ingreso_id, suscripcion_id)` |
 | `pagos_egresos` | Pagos a proveedores | FKs `proveedor_id`, `cuenta_madre_id`; `monto_pagado_usd` |
@@ -38,7 +38,7 @@ Relaciones principales: un **cliente** (`usuarios.rol='cliente'`) puede tener mu
 
 | Tabla | Descripción | Claves |
 |---|---|---|
-| `pedidos` | Pedidos de la tienda: gift cards y planes solicitados por clientes registrados | `tipo` ('plan'/'giftcard'), `plataforma`, campos por tipo (`duracion_dias`+`precio_usd` para plans; `valor_giftcard_usd`+`precio_giftcard_eur`+`diseno_giftcard` para gift cards), FK `cliente_id`→`usuarios.id` (ON DELETE SET NULL), `cliente_nombre`, `cliente_contacto`, `estado` ('nuevo'/'contactado'/'completado'/'cancelado') |
+| `pedidos` | Pedidos de la tienda: gift cards y planes solicitados por clientes registrados | `tipo` ('plan'/'giftcard'), `plataforma`, campos por tipo (`duracion_dias`+`precio_usd` para plans; `valor_giftcard_usd`+`precio_giftcard_eur`+`diseno_giftcard` para gift cards), FK `cliente_id`→`usuarios.id` (ON DELETE SET NULL), `cliente_nombre`, `cliente_contacto`, `estado` ('nuevo'/'contactado'/'completado'/'cancelado'), cobro del checkout (migración `0012`): `metodo_pago`, `moneda_cobro`, `monto_cobro NUMERIC(12,2)` |
 
 > **Tarifas de gift cards en código (fuera de la BD):** los 19 valores USD→EUR de las Apple Gift
 > Cards viven en `src/lib/giftcards.ts` (p. ej. $25 → 30.75 €) a propósito, para que no se editen

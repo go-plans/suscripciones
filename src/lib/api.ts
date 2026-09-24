@@ -281,6 +281,10 @@ export async function crearPedido(input: {
   cliente_id: string
   cliente_nombre: string | null
   cliente_contacto: string | null
+  // Cobro cotizado en el checkout (v0.5.0)
+  metodo_pago?: string | null
+  moneda_cobro?: string | null
+  monto_cobro?: number | null
 }): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from('pedidos').insert({
     tipo: input.tipo,
@@ -293,6 +297,9 @@ export async function crearPedido(input: {
     cliente_id: input.cliente_id,
     cliente_nombre: input.cliente_nombre,
     cliente_contacto: input.cliente_contacto,
+    metodo_pago: input.metodo_pago ?? null,
+    moneda_cobro: input.moneda_cobro ?? null,
+    monto_cobro: input.monto_cobro ?? null,
   })
   if (error) return { ok: false, error: errMsg(error) }
   invalidar('pedidos')
@@ -451,6 +458,27 @@ export async function fetchTasaDelDia(): Promise<number | null> {
     const row = data?.[0] as { tasa_bcv?: number } | undefined
     return row?.tasa_bcv ?? null
   })
+}
+
+// Tasa € → Bs del día (Pago Móvil de las Apple Gift Cards, ancladas al euro).
+// Vive en `tasas_cambio.tasa_eur_bs` (migración 0012). Si la migración no se
+// ha aplicado o la tasa no existe, devuelve null (el checkout anota la falta).
+export async function fetchTasaEurDelDia(): Promise<number | null> {
+  try {
+    return await cached('tasa-eur', async () => {
+      const { data, error } = await supabase
+        .from('tasas_cambio')
+        .select('tasa_eur_bs')
+        .order('fecha', { ascending: false })
+        .limit(1)
+      if (error) return null
+      const row = data?.[0] as { tasa_eur_bs?: number | null } | undefined
+      const t = Number(row?.tasa_eur_bs)
+      return t > 0 ? t : null
+    })
+  } catch {
+    return null
+  }
 }
 
 export type FuenteTasa = 'bcv-directo' | 'sistema' | 'ninguna'

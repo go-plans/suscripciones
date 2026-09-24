@@ -77,16 +77,22 @@ El job `vencimientos-diarios` (00:00) marca como `vencida` toda suscripción act
 1. Los **valores y precios son tarifas fijas en código** (`src/lib/giftcards.ts`): 19 denominaciones USD → precio de venta en EUR (p. ej. $25 → 30.75 €). *No viven en la BD* para que no sean editables por accidente.
 2. La página `/#/tienda/apple` unifica la portada (`apple.com/shop/gift-cards`) y la página de compra (`/buy-giftcard`): hero con lema en inglés, chips "¿Dónde puedes usarla?", **selector de diseño** (izquierda) y **lista de montos** (derecha).
 3. Los diseños se cargan de `public/apple/<id>.png` (los subirá el dueño de la tienda); mientras no existan, se muestra un placeholder CSS con el logo y el monto sobre el gradiente del diseño.
-4. Al pulsar **Comprar**:
-   - sin sesión → `/#/registro` (flujo "registro + WhatsApp");
-   - con sesión → se **inserta un pedido** (tipo `giftcard`, con `valor_giftcard_usd`, `precio_giftcard_eur` y `diseno_giftcard`) y se abre WhatsApp al 584246603660 con el pedido prellenado.
-5. En el panel admin, la pestaña **Pedidos** muestra el monto y el diseño de cada gift card (con swatch del diseño elegido).
+4. "Añadir al carrito" guarda la línea `giftcard` (diseño + monto) en el **carrito** (`/#/carrito`) y el cobro se concreta en el **checkout** (`/#/checkout`, v0.5.0).
+5. En el panel admin, la pestaña **Pedidos** muestra el monto, el diseño (con swatch) y el **cobro** (método + monto cotizado).
 
-## 8.2 Pedidos de la tienda (v0.4.0)
+## 8.2 Pedidos de la tienda (v0.5.0)
 
-- Todo botón "Contratar"/"Comprar" con sesión iniciada crea un **pedido** en la tabla `pedidos` (`tipo` = `plan` | `giftcard`) y abre WhatsApp con el resumen.
-- Sin sesión, el botón lleva al **registro** (`/#/registro`); tras crear la cuenta el cliente vuelve a comprar y el pedido queda registrado con su nombre y teléfono.
-- El admin gestiona los pedidos en `/#/pedidos`: estados `nuevo → contactado → completado | cancelado`, filtros por estado y WhatsApp directo al cliente cuando tiene teléfono.
+- **Carrito** (`/#/carrito`): línea por cada gift card o plan añadido, con cantidad ajustable y persistencia en `localStorage` (sobrevive registros y cierres de pestaña). El badge 🛒 de `BarraTienda` muestra el total de artículos.
+- **Checkout** (`/#/checkout`): resumen del pedido → datos del cliente (nombre y teléfono, prellenados con la cuenta) → **método de pago** con el total del carrito por método → confirmar.
+- Al **confirmar** con sesión se **inserta una fila en `pedidos` por cada línea** (todas con `metodo_pago`, `moneda_cobro` y `monto_cobro`) y se abre **WhatsApp** al 584246603660 con el resumen completo, el total y las instrucciones de pago. Si el cliente aún no tiene cuenta, se le pide crearla (el carrito no se pierde).
+- El admin gestiona los pedidos en `/#/pedidos` (estados, filtros, cobro y WhatsApp al cliente).
+
+## 8.3 Métodos de pago (v0.5.0)
+
+- **Pago Móvil (Bs)**: las **Apple Gift Cards van ANCLADAS AL EURO** → `precio_eur × tasa_eur_bs` (tasa del día en `tasas_cambio.tasa_eur_bs`); los **planes** usan la **tasa BCV** (USD → Bs).
+- **USDT / USDC / Zinli / Binance**: cobran **el mismo número que el precio de referencia** de cada producto — gift cards en euros (3.10 € → 3.10 USDT) y planes en dólares (2.99 $ → 2.99 USDT). En un carrito mixto se suman los números (€ + $).
+- Las **instrucciones de cobro** del negocio viven en `src/lib/pagos.ts` (`DATOS_COBRO`), con los datos PENDIENTES hasta que el dueño los provea; hasta entonces el pedido se registra igual y WhatsApp cierra la coordinación.
+- La pestaña **Pedidos** del panel muestra el método y monto cotizado a cada cliente.
 
 ## 9. Referidos y agencia (resumen)
 

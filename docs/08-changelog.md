@@ -2,6 +2,17 @@
 
 > Historial de cambios del proyecto. Se actualiza **en el mismo commit** que los cambios de código. Formato de líneas: `- [tipo] descripción` (tipo: feat / fix / docs / chore / security / refactor).
 
+## 2026-09-24 — Carrito + checkout con métodos de pago (Pago Móvil, USDT, USDC, Zinli, Binance)
+
+### v0.5.0
+
+- **feat** **Carrito de la tienda**: al comprar un producto ya no se cierra el pedido al instante — el botón "Añadir al carrito" (gift cards y planes) agrega la línea al **carrito** (`/#/carrito`, persistente en localStorage, con cantidades ajustables), y el icono 🛒 de la barra de la tienda muestra el total con su badge.
+- **feat** **Checkout** (`/#/checkout`): resumen del pedido, datos del cliente (nombre y teléfono, prellenados con la cuenta), **método de pago** y confirmación. Al confirmar se **registran los pedidos** (una fila por línea, con `metodo_pago`, `moneda_cobro` y `monto_cobro` cotizados) y se **abre WhatsApp** con el resumen completo del carrito y las instrucciones de pago. Sin sesión, el checkout pide crear la cuenta primero (el carrito no se pierde).
+- **feat** **Métodos de pago**: **Pago Móvil (Bs)**, **USDT**, **USDC**, **Zinli** y **Binance**. Las **Apple Gift Cards van ancladas al euro**: el Pago Móvil se calcula con la tasa €→Bs (`tasas_cambio.tasa_eur_bs`, migración `0012`) y USDT/USDC/Zinli/Binance cobran **el mismo número que el precio en euros** (3.10 € → 3.10 USDT, etc.). Los planes usan la tasa BCV (USD→Bs) y cobran su precio en USD para USDT/Binance.
+- **feat** **Panel admin — Pedidos**: nueva columna **Cobro** con el método y el monto cotizado a cada cliente.
+- **feat** `src/lib/pagos.ts`: catálogo de métodos, cálculo de montos por método y `DATOS_COBRO` (instrucciones del negocio, pendientes de los datos reales).
+- **docs** changelog, base de datos y flujos de negocio actualizados (migración `0012_carrito_checkout.sql`).
+
 ## 2026-09-24 — Pedidos de la tienda + gestor de planes + rediseño de Apple Gift Cards
 
 ### v0.4.0
